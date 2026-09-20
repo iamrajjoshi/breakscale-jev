@@ -1,30 +1,30 @@
-# Contributing to Switchyard
+# Contributing to breakscale-jev
 
-Switchyard is a fork of [Breakscale](https://github.com/xevrion/breakscale) by xevrion and contributors. The canvas, simulator and teaching material come from that project. This fork adds a bounded JEV repair watcher and its local Node backend.
+breakscale-jev is a fork of [Breakscale](https://github.com/xevrion/breakscale) by xevrion and contributors. The canvas, simulator and teaching material come from that project. This fork adds a bounded JEV repair watcher and its local Node backend.
 
-Send Switchyard bugs and pull requests to [iamrajjoshi/switchyard](https://github.com/iamrajjoshi/switchyard). Changes intended for the original simulator belong in [upstream Breakscale](https://github.com/xevrion/breakscale), following its contribution guide. An issue in one repository does not notify or assign work to the other project's maintainers.
+Send breakscale-jev bugs and pull requests to [iamrajjoshi/breakscale-jev](https://github.com/iamrajjoshi/breakscale-jev). Changes intended for the original simulator belong in [upstream Breakscale](https://github.com/xevrion/breakscale), following its contribution guide. An issue in one repository does not notify or assign work to the other project's maintainers.
 
 Read [PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md) and [UPSTREAM.md](UPSTREAM.md) before changing behavior. Small fixes can go directly to a pull request. Discuss larger changes first. This fork currently keeps the upstream simulation files unchanged; changing the engine requires a separate scope decision.
 
 ## Getting set up
 
-Use Node 24 or newer and npm; `.node-version` records the development version. Fork Switchyard on GitHub, then clone your fork:
+Use Node 24 or newer and npm; `.node-version` records the development version. Fork breakscale-jev on GitHub, then clone your fork:
 
 ```sh
-git clone https://github.com/YOUR-USERNAME/switchyard.git
-cd switchyard
+git clone https://github.com/YOUR-USERNAME/breakscale-jev.git
+cd breakscale-jev
 npm ci --ignore-scripts
 npm run dev
 ```
 
 The app runs at http://127.0.0.1:4176. The local server serves both the app and model API. Manual simulation works without a model credential; use `JEV_OFFLINE=1` for checks that must not load one. See README.md for opt-in JEV setup.
 
-Use a feature branch based on this fork's default branch. The default is `raj--switchyard--jev-recovery`; CI also supports `main`. When contributing from a personal fork, keep a separate remote for Switchyard:
+Use a feature branch based on this fork's default branch. The default is `raj--breakscale-jev--recovery`; CI also supports `main`. When contributing from a personal fork, keep a separate remote for breakscale-jev:
 
 ```sh
-git remote add switchyard https://github.com/iamrajjoshi/switchyard.git
-git fetch switchyard
-git switch -c raj--switchyard--your-change switchyard/raj--switchyard--jev-recovery
+git remote add breakscale-jev https://github.com/iamrajjoshi/breakscale-jev.git
+git fetch breakscale-jev
+git switch -c raj--breakscale-jev--your-change breakscale-jev/raj--breakscale-jev--recovery
 ```
 
 Useful commands:

@@ -1,10 +1,10 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Question or idea for Switchyard
-    url: https://github.com/iamrajjoshi/switchyard/issues
+  - name: Question or idea for breakscale-jev
+    url: https://github.com/iamrajjoshi/breakscale-jev/issues
     about: Ask about this fork's JEV operator or discuss a proposed change.
   - name: Report a security problem
-    url: https://github.com/iamrajjoshi/switchyard/security/policy
+    url: https://github.com/iamrajjoshi/breakscale-jev/security/policy
     about: Read this fork's policy before sharing vulnerability details.
   - name: Original Breakscale project
     url: https://github.com/xevrion/breakscale

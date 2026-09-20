@@ -1,7 +1,7 @@
-# Switchyard
+# breakscale-jev
 
 A fork of Breakscale by xevrion and contributors: https://github.com/xevrion/breakscale. The integration baseline is revision 3ce685bddd8cfba85bd6c2059df935072383b913. Original Git history, authorship and the MIT license are preserved.
 
-Breakscale supplies the editable canvas, component catalog, examples, challenges and discrete-event simulation. Switchyard adds an automatic JEV watcher, incident shortcuts and measured action history. JEV chooses a bounded action from live simulated state; TypeScript executes it and the unchanged Breakscale engine measures the outcome. Recovery is not guaranteed, and no model-superiority claim is made.
+Breakscale supplies the editable canvas, component catalog, examples, challenges and discrete-event simulation. breakscale-jev adds an automatic JEV watcher, incident shortcuts and measured action history. JEV chooses a bounded action from live simulated state; TypeScript executes it and the unchanged Breakscale engine measures the outcome. Recovery is not guaranteed, and no model-superiority claim is made.
 
-The local Node server keeps TypeSafe credentials out of the browser. Manual controls work without a key. See README.md, PROJECT.md and UPSTREAM.md for setup, pending limitations and attribution. There is no hosted Switchyard deployment implied by this source.
+The local Node server keeps TypeSafe credentials out of the browser. Manual controls work without a key. See README.md, PROJECT.md and UPSTREAM.md for setup, pending limitations and attribution. There is no hosted breakscale-jev deployment implied by this source.

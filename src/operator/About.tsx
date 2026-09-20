@@ -65,10 +65,10 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
       </header>
       <h2 id="operator-about-title">Break the system. Watch JEV respond.</h2>
       <p id="operator-about-intro">
-        Switchyard adds automatic JEV repair to Breakscale, the system-design simulator
-        by xevrion and contributors. Turn up traffic, crash a service, slow a database,
-        or change a component’s settings. JEV watches for trouble and tries to repair it
-        while the simulation keeps running.
+        breakscale-jev adds automatic JEV repair to Breakscale, the system-design
+        simulator by xevrion and contributors. Turn up traffic, crash a service, slow a
+        database, or change a component’s settings. JEV watches for trouble and tries to
+        repair it while the simulation keeps running.
       </p>
       <h3>You cause the incident</h3>
       <p>
@@ -110,11 +110,11 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         {' and contributors'}, used under the MIT license. This fork adds automatic JEV
         repair, direct incident controls and measured action history.{' '}
         <a
-          href="https://github.com/iamrajjoshi/switchyard"
+          href="https://github.com/iamrajjoshi/breakscale-jev"
           target="_blank"
           rel="noreferrer noopener"
         >
-          Switchyard source on GitHub
+          breakscale-jev source on GitHub
         </a>
       </footer>
       <button

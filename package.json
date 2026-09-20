@@ -1,5 +1,5 @@
 {
-  "name": "switchyard",
+  "name": "breakscale-jev",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -46,7 +46,7 @@
   "description": "Breakscale with a JEV operator: build it, break it, and watch it recover.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iamrajjoshi/switchyard.git"
+    "url": "https://github.com/iamrajjoshi/breakscale-jev.git"
   },
   "engines": {
     "node": ">=24"

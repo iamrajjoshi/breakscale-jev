@@ -25,7 +25,7 @@ const server = createApp({
 });
 server.listen(port, '127.0.0.1', () =>
   console.log(
-    `Switchyard: http://127.0.0.1:${port} · Jev ${key ? 'configured' : 'not configured'}`,
+    `breakscale-jev: http://127.0.0.1:${port} · Jev ${key ? 'configured' : 'not configured'}`,
   ),
 );
 let closing = false;

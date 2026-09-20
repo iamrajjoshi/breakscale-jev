@@ -925,7 +925,7 @@ export default function App() {
         onSelect: () => setSettingsOpen(true),
       },
       {
-        label: 'About Switchyard',
+        label: 'About breakscale-jev',
         icon: 'M12 16v-4M12 8h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
         onSelect: () => setAboutOpen(true),
       },

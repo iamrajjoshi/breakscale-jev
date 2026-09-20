@@ -301,7 +301,7 @@ for (const viewport of [
         await expect(about).not.toBeVisible();
         await menu.click();
         await page
-          .getByRole('menuitem', { name: 'About Switchyard', exact: true })
+          .getByRole('menuitem', { name: 'About breakscale-jev', exact: true })
           .click();
       } else {
         await expectReachable(about);

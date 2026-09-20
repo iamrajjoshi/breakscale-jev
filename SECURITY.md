@@ -1,6 +1,6 @@
 # Security
 
-Switchyard is a fork of Breakscale with an added local Node server and JEV integration. The simulator runs in the browser, but the application is not entirely browser-only and model use sends data outside the machine.
+breakscale-jev is a fork of Breakscale with an added local Node server and JEV integration. The simulator runs in the browser, but the application is not entirely browser-only and model use sends data outside the machine.
 
 ## Data and service boundaries
 
@@ -14,6 +14,6 @@ Request validation, origin checks, bounded model calls and server-side credentia
 
 ## Reporting an issue
 
-Report Switchyard-specific vulnerabilities to this fork's maintainer, @iamrajjoshi. Use the private reporting option in [this repository's Security tab](https://github.com/iamrajjoshi/switchyard/security) if it is enabled. If no private channel is listed, ask the maintainer for one without posting exploit details, credentials or sensitive data in a public issue. No response time is guaranteed.
+Report breakscale-jev-specific vulnerabilities to this fork's maintainer, @iamrajjoshi. Use the private reporting option in [this repository's Security tab](https://github.com/iamrajjoshi/breakscale-jev/security) if it is enabled. If no private channel is listed, ask the maintainer for one without posting exploit details, credentials or sensitive data in a public issue. No response time is guaranteed.
 
 For a problem affecting unmodified Breakscale, follow [upstream's security policy](https://github.com/xevrion/breakscale/security/policy). Include the affected revision, a reproducible description, expected and actual behavior, and the impact. Redact model credentials and personal data, and verify automated scanner findings before reporting them.

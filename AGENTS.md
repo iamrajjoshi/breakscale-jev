@@ -1,6 +1,6 @@
-# Switchyard agent guide
+# breakscale-jev agent guide
 
-Switchyard is a fork of Breakscale by xevrion and contributors, with a bounded JEV repair watcher. Read PROJECT.md and UPSTREAM.md first. Credit the upstream canvas, simulator, examples and tests separately from this fork's additions.
+breakscale-jev is a fork of Breakscale by xevrion and contributors, with a bounded JEV repair watcher. Read PROJECT.md and UPSTREAM.md first. Credit the upstream canvas, simulator, examples and tests separately from this fork's additions.
 
 ## Map and commands
 

@@ -1,6 +1,6 @@
-# Switchyard
+# breakscale-jev
 
-Switchyard adds automatic JEV repair to [Breakscale](https://github.com/xevrion/breakscale), the system-design simulator by xevrion and contributors. Breakscale provides the editable canvas, 33 component types, examples, challenges and discrete-event engine. Its original history, authorship and MIT license are preserved in this fork.
+breakscale-jev adds automatic JEV repair to [Breakscale](https://github.com/xevrion/breakscale), the system-design simulator by xevrion and contributors. Breakscale provides the editable canvas, 33 component types, examples, challenges and discrete-event engine. Its original history, authorship and MIT license are preserved in this fork.
 
 Turn up traffic, crash a service, slow a database or change its settings. JEV chooses a supported repair, code applies it, and the simulation measures what happens next. The manual editor remains available with or without a model connection.
 

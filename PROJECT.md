@@ -1,6 +1,6 @@
-# Switchyard
+# breakscale-jev
 
-Switchyard adds a JEV repair watcher to [Breakscale](https://github.com/xevrion/breakscale), created by xevrion and contributors. Breakscale supplies the manual editor, component catalog, examples, challenges, discrete-event simulation and engine tests. This fork adds incident shortcuts, bounded model decisions, repair measurements and visible action history.
+breakscale-jev adds a JEV repair watcher to [Breakscale](https://github.com/xevrion/breakscale), created by xevrion and contributors. Breakscale supplies the manual editor, component catalog, examples, challenges, discrete-event simulation and engine tests. This fork adds incident shortcuts, bounded model decisions, repair measurements and visible action history.
 
 ## Product contract
 
