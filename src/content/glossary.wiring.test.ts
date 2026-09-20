@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY_BY_ID } from './glossary';
 import { KIND_TERM } from '../components/nodeVisuals';
+import { KIND_BLURB } from '../designer/catalog';
+import { specFor } from '../designer/config';
 
 /**
  * Guards the JOIN between the interface and the glossary.
@@ -21,12 +23,15 @@ import { KIND_TERM } from '../components/nodeVisuals';
  * would mean a new dependency.
  */
 
-/** Every component source, as raw text. */
-const SOURCES = import.meta.glob('../components/*.{ts,tsx}', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>;
+/** Component sources and their shared Inspector metadata, as raw text. */
+const SOURCES = import.meta.glob(
+  ['../components/*.{ts,tsx}', '../designer/config.ts'],
+  {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  },
+) as Record<string, string>;
 
 /** Literal ids handed to a <Term>, a `term=` prop, or a `term:` field. */
 function referencedIds(): Map<string, Set<string>> {
@@ -86,14 +91,23 @@ describe('glossary wiring', () => {
       path.endsWith('/Inspector.tsx'),
     )?.[1];
     expect(inspector, 'Inspector.tsx not in the glob').toBeTruthy();
-    expect(inspector).toMatch(
+    expect(inspector).toContain('KIND_BLURB[node.kind]');
+    expect(inspector).toContain('specFor(node.kind, field)');
+    expect(KIND_BLURB.cache).toMatch(
       /Each cache rolls its own hit chance, independently of the others/,
     );
-    expect(inspector).toMatch(/treating later caches as filters on earlier misses/);
-    expect(inspector).toMatch(/rolled independently of every other cache on the path/);
-    expect(inspector).toMatch(/Each cache or CDN rolls this chance on its own/);
-    expect(inspector).toMatch(
-      /Two at 80% leave about 4% of traffic for whatever is behind them/,
+    expect(KIND_BLURB.cache).toMatch(
+      /treating later caches as filters on earlier misses/,
     );
+    expect(KIND_BLURB.cdn).toMatch(
+      /rolled independently of every other cache on the path/,
+    );
+    for (const kind of ['cache', 'cdn'] as const) {
+      const hint = specFor(kind, 'hitRate').hint;
+      expect(hint).toMatch(/Each cache or CDN rolls this chance on its own/);
+      expect(hint).toMatch(
+        /Two at 80% leave about 4% of traffic for whatever is behind them/,
+      );
+    }
   });
 });

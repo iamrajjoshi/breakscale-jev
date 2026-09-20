@@ -1,20 +1,16 @@
 version: 2
 
 updates:
-  # `bun`, not `npm`. Bun is its own ecosystem: under `npm` Dependabot bumps
-  # package.json and never touches bun.lock, so every PR failed CI on
-  # `bun install --frozen-lockfile`. Supported since February 2025 and needs
-  # no opt-in flag.
-  # Grouped so a week of patch bumps arrives as one PR instead of a dozen.
-  - package-ecosystem: bun
+  # Keep package.json and the npm lockfile in sync.
+  # Group compatible updates to limit review noise.
+  - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
     commit-message:
-      prefix: chore
-      include: scope
+      prefix: ':wrench: chore[deps]'
     groups:
       react:
         patterns:
@@ -40,7 +36,7 @@ updates:
       interval: weekly
       day: monday
     commit-message:
-      prefix: ci
+      prefix: ':wrench: chore[ci]'
     groups:
       actions:
         patterns:

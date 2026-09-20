@@ -1,8 +1,11 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Question or idea
-    url: https://github.com/xevrion/breakscale/discussions
-    about: For anything that is not a bug report or a concrete feature request, start a discussion.
+  - name: Question or idea for Switchyard
+    url: https://github.com/iamrajjoshi/switchyard/issues
+    about: Ask about this fork's JEV operator or discuss a proposed change.
   - name: Report a security problem
-    url: https://github.com/xevrion/breakscale/security/policy
-    about: Please report vulnerabilities privately rather than in a public issue.
+    url: https://github.com/iamrajjoshi/switchyard/security/policy
+    about: Read this fork's policy before sharing vulnerability details.
+  - name: Original Breakscale project
+    url: https://github.com/xevrion/breakscale
+    about: Upstream simulator source, issues and contribution guidance.

@@ -3,6 +3,7 @@ import type { Topology } from './sim/types';
 import { Engine } from './sim/engine';
 import { makeNode } from './sim/presets';
 import { makeNote } from './sim/annotations';
+import { compileEdit } from './designer/compiler';
 import { HISTORY_LIMIT, SessionHistory, syncEngine } from './history';
 import type { HistorySnapshot } from './history';
 
@@ -342,4 +343,139 @@ describe('syncEngine', () => {
     expect(setTopo).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
   });
+
+  it('keeps mixed architecture and scale edits exact through one undo and redo', () => {
+    const before = makeTopology();
+    const service = before.nodes[1]!;
+    service.config.instances = 1;
+    const engine = new Engine(before);
+    engine.advance(1200);
+    const clock = engine.snapshot().system.timeMs;
+    const after = structuredClone(before);
+    after.nodes[1]!.config.instances = 3;
+    after.nodes.push(makeNode('queue', 400, 0));
+    const history = new SessionHistory();
+    history.commit('JEV design', snap(before));
+
+    syncEngine(engine, before, after);
+    expect(engine.snapshot().nodes[service.id]!.instances).toBe(3);
+    expect(history.undoDepth).toBe(1);
+
+    const undone = history.undo(snap(after))!;
+    syncEngine(engine, after, undone.topology);
+    expect(engine.snapshot().nodes[service.id]!.instances).toBe(1);
+    expect(Object.keys(engine.snapshot().nodes)).toHaveLength(2);
+
+    const redone = history.redo(undone)!;
+    syncEngine(engine, undone.topology, redone.topology);
+    expect(engine.snapshot().nodes[service.id]!.instances).toBe(3);
+    expect(Object.keys(engine.snapshot().nodes)).toHaveLength(3);
+    expect(engine.snapshot().system.timeMs).toBe(clock);
+  });
+
+  it.each([false, true])(
+    'preserves a live autoscaled fleet through tuning, undo and redo (structural edit: %s)',
+    (structural) => {
+      const before = makeTopology();
+      const client = before.nodes[0]!;
+      const service = before.nodes[1]!;
+      client.config.rps = 1000;
+      Object.assign(service.config, { instances: 1, capacity: 1, serviceMs: 100 });
+      const autoscaler = makeNode('autoscaler', 200, 160);
+      Object.assign(autoscaler.config, {
+        minCapacity: 1,
+        maxCapacity: 8,
+        targetUtil: 0.3,
+        cooldownMs: 0,
+        warmupMs: 0,
+        scaleStepPct: 1,
+      });
+      before.nodes.push(autoscaler);
+      before.edges.push({
+        id: 'supervisor',
+        from: autoscaler.id,
+        to: service.id,
+        weight: 1,
+        control: true,
+      });
+      const engine = new Engine(before, 7);
+      for (let frame = 0; frame < 120; frame++) engine.advance(1000 / 60);
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(8);
+      expect(before.nodes[1]!.config.instances).toBe(1);
+      const clock = engine.snapshot().system.timeMs;
+      const completed = engine.snapshot().nodes[service.id]!.totalCompleted;
+      let after = compileEdit(before, {
+        op: 'configure',
+        nodeId: service.id,
+        field: 'serviceMs',
+        value: 50,
+      }).topology;
+      if (structural)
+        after = compileEdit(after, {
+          op: 'add',
+          kind: 'queue',
+          placement: 'unconnected',
+        }).topology;
+      const update = vi.spyOn(engine, 'updateNodeConfig');
+      const history = new SessionHistory();
+      history.commit('JEV design', snap(before));
+
+      syncEngine(engine, before, after);
+      expect(update).toHaveBeenLastCalledWith(service.id, { serviceMs: 50 });
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(8);
+      expect(history.undoDepth).toBe(1);
+
+      const undone = history.undo(snap(after))!;
+      syncEngine(engine, after, undone.topology);
+      expect(update).toHaveBeenLastCalledWith(service.id, { serviceMs: 100 });
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(8);
+
+      const redone = history.redo(undone)!;
+      syncEngine(engine, undone.topology, redone.topology);
+      expect(update).toHaveBeenLastCalledWith(service.id, { serviceMs: 50 });
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(8);
+      expect(engine.snapshot().system.timeMs).toBe(clock);
+      expect(engine.snapshot().nodes[service.id]!.totalCompleted).toBe(completed);
+    },
+  );
+
+  it.each([false, true])(
+    'restores an omitted legacy instance count through undo, redo and reset (structural edit: %s)',
+    (structural) => {
+      const before = makeTopology();
+      const service = before.nodes[1]!;
+      delete service.config.instances;
+      const engine = new Engine(before);
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(1);
+      let after = compileEdit(before, {
+        op: 'configure',
+        nodeId: service.id,
+        field: 'instances',
+        value: 3,
+      }).topology;
+      if (structural)
+        after = compileEdit(after, {
+          op: 'add',
+          kind: 'queue',
+          placement: 'unconnected',
+        }).topology;
+      const history = new SessionHistory();
+      history.commit('JEV design', snap(before));
+      syncEngine(engine, before, after);
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(3);
+
+      const undone = history.undo(snap(after))!;
+      expect(undone.topology.nodes[1]!.config.instances).toBeUndefined();
+      syncEngine(engine, after, undone.topology);
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(1);
+      engine.reset();
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(1);
+
+      const redone = history.redo(undone)!;
+      syncEngine(engine, undone.topology, redone.topology);
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(3);
+      engine.reset();
+      expect(engine.snapshot().nodes[service.id]!.instances).toBe(3);
+    },
+  );
 });

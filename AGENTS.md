@@ -1,125 +1,35 @@
-# Project coding standards
+# Switchyard agent guide
 
-Breakscale is a discrete-event system design simulator for CS students. `src/sim` is a pure
-simulation engine with no React, no DOM and no I/O; everything else is the interface around it.
+Switchyard is a fork of Breakscale by xevrion and contributors, with a bounded JEV repair watcher. Read PROJECT.md and UPSTREAM.md first. Credit the upstream canvas, simulator, examples and tests separately from this fork's additions.
 
-## Communication
+## Map and commands
 
-- Be succinct. Prefer code over prose.
-- Do not explain or teach unless asked.
-- Do not summarise your changes afterwards unless asked.
-- Do not apologise when corrected; give the correct answer.
-- State what you did not verify. An honest gap costs less than a confident wrong claim.
+`src/sim` contains the upstream engine; preserve all 30 files byte-for-byte. `src/App.tsx` and `src/components` own the manual canvas. `src/operator/contracts.ts` builds observations and legal candidates; `Operator.tsx` owns watch, requests, cancellation and status. `src/designer` retains typed-edit internals and Inspector metadata. `server` owns credentials, session limits and TypeSafe transport.
 
-## Correctness
+Use Node 24+ and npm with the checked-in lockfile. `.node-version` records the development version.
 
-- The numbers the simulator shows must be measured, never approximated. Percentiles come from a
-  ring buffer of real request latencies, not from a mean times a constant.
-- A component with no meaningful value for a metric shows something else, or nothing. Never a
-  plausible-looking number.
-- A behaviour is not finished until a script has printed its real output. Paste the numbers.
-- Determinism is a contract: same seed and topology means byte-identical snapshots.
-- Never modify `src/sim` to make a UI problem go away.
-
-## TypeScript
-
-- Strict mode. No `any`, no non-null assertions without a comment saying why.
-- Prefer `const` and `readonly`. Prefer optional chaining and nullish coalescing.
-- Avoid allocation on hot paths: `advance()` runs per frame, `snapshot()` at 10Hz.
-- Discriminated unions over boolean flags for state that has more than two cases.
-
-## React
-
-- Function components and hooks only. No conditional hooks.
-- The engine is mutable state outside React. Hold it in a ref or lazy `useState`, never in a
-  dependency array.
-- The rAF loop advances every frame; React re-renders at 10Hz. Never `setState` per frame.
-- `React.memo` on anything the canvas renders per node or per edge.
-- Effects synchronise with external systems. Deriving state in an effect is a bug.
-
-## Naming
-
-- PascalCase for components, interfaces and type aliases.
-- camelCase for variables, functions and methods.
-- ALL_CAPS for module constants.
-- Component kinds are lowercase string literals: `'ratelimiter'`, not `'rateLimiter'`.
-
-## Styling
-
-- All colour comes from tokens in `src/index.css`. No hardcoded hex anywhere else.
-- No emoji, glassmorphism, gradient text or glowing shadows.
-- Numbers render in the mono stack with tabular figures.
-- Transitions are interactive only, 120-200ms, and `prefers-reduced-motion` disables them.
-- Text meets WCAG AA. Compute the ratio; do not estimate it.
-
-## Canvas
-
-The pointer layer was rebuilt after capture-on-pointerdown suppressed the browser's synthesized
-click and made every overlay button inert. When touching it, preserve:
-
-- `.cv-surface` owns the handlers.
-- Hit routing is `data-hit` + `data-id` resolved in one `hitTest`.
-- `setPointerCapture` happens only at gesture promotion, wrapped in try/catch.
-- Chrome is excluded via `closest('button, input, select, textarea, a, [data-chrome]')`.
-- Any floating overlay carries `[data-chrome]` or it will swallow gestures.
-
-Per-kind colours are a specificity trap: `.cv-node` and `[data-kind='cache']` are both 0-1-0, so
-source order wins. Never declare `--k-*` in a class rule; fallbacks belong inside `var()`.
-
-## Testing
-
-- Run `bun run test` after every change and fix what breaks. Not `bun test`:
-  that runs bun's own runner, which skips the vitest config and its jsdom
-  environment, and reports dozens of failures that are not real.
-- Test interaction with real `PointerEvent` sequences. `.click()` bypasses the layer that breaks.
-- Paced moves are not enough. A three-event flick found a race a 16ms-paced drag did not.
-- A backgrounded tab suspends `requestAnimationFrame`; the simulation reads zero and looks broken.
-  Check `document.visibilityState` before diagnosing.
-- Hard-reload before concluding anything is broken. Stale HMR has caused false diagnoses here.
-
-## Adding a component
-
-1. `NodeKind` in `src/sim/types.ts`
-2. Config fields, each with meaning and units in a doc comment
-3. A behaviour object in the matching `src/sim/behaviour-*.ts`
-4. `defaultConfig` entry and label
-5. A readout in `readoutFor`, showing what an engineer would watch. Never a field that is
-   structurally always zero for that kind.
-6. A glossary entry in `src/content/glossary.ts`
-7. A test proving it behaves differently from every existing kind
-
-Step 7 is the bar. A kind that is another kind with different defaults does not get added.
-
-## Adding an example
-
-One lesson each. Stable at its default load, under 2 percent errors. Visibly degrades at 2-4x with
-the bottleneck being the lesson. No overlapping nodes. A node's ceiling is
-`capacity * instances * (1000 / serviceMs)` rps; do that arithmetic before tuning.
-
-Annotate it. Sections mark real architectural tiers and are named for what the tier does, never
-for what is inside it ("Starting a stream", not "Services"). One note must name the failure mode
-in terms the reader can act on: what to drag, and what happens. A three-box chain gets one note
-and no sections. Stacked tiers need `LROW(row, lane)`, because a section's label plate needs 28px
-of a 42px row gutter and two padded frames will not both fit. `presets.annotations.test.ts`
-asserts the geometry; run it rather than checking by eye, then load the example and look at it.
-
-## Copy
-
-The reader is a first-year student who has not taken a queueing theory course.
-
-- Plain language: "requests waiting in line", not `queueLimit`.
-- Sentence case. No unexplained abbreviations.
-- Say why a number matters, not only what it is.
-- No em dashes. Use a comma, a semicolon, or a second sentence.
-
-## Commands
-
-```bash
-bun dev            # dev server on :5173
-bun run build      # typecheck + build
-bun run test       # vitest. NOT `bun test`, which bypasses the jsdom setup
-bun run lint
-bun run format
+```sh
+npm ci --ignore-scripts
+npm run dev
+npm run check
+npm run format:check
+npm run test:browser
 ```
 
-A pre-push hook runs all of it. Do not commit; leave that to the maintainer.
+The app uses port 4176 and browser tests use 4186. `npm start` serves the built app. Default tests mock transport; set `JEV_OFFLINE=1` for credential-free checks. `npm run test:live:recovery` is a separate opt-in real-model check capped at fourteen attempts. Use Prettier and Oxlint; format only touched files.
+
+## Invariants
+
+- Keep credentials server-side. Never print, commit or place `TYPESAFE_API_KEY` in browser code. Preserve offline mode's early return before credential loading.
+- Pin `jev-1.13.0`, validate finite distributions and offered choices, and add no hidden retries or fallback model. JEV selects; TypeScript executes; Breakscale measures.
+- Healthy watch consumes no model calls. Manual edits cancel stale answers without disarming watch. Pause, hidden tabs and challenges suspend decisions; Stop disarms watch.
+- Preserve one in-flight call, eighteen attempts per rolling sixty-second window, bounded retained sessions and provider timeout. Reset and Retry JEV must not refill the budget.
+- Require at least 2,400 milliseconds of actual simulated time after a repair before another repair or a recovery claim. Keep each configuration repair as a separate Undo entry.
+- Respect the finite repair catalog. Do not lower demand, erase modeled lock costs, fabricate results or claim to repair missing topology. Preserve the three-stalled-wait guard and explicit intervention outcomes.
+- Preserve upstream licenses, manual editing and challenge restrictions. Add no database, cloud backend, arbitrary tool execution or model-written simulation code.
+
+Database write-lock contention is shared across instances. The existing contention guard prunes ineffective database growth after an incident is detected; it does not detect every severe lock incident. Keep the pending detection gap in PROJECT.md explicit until a regression reproduces it and a fix passes.
+
+Keep the canvas primary and the repair bar visible. Verify engine state changes, repeated damage, cancellation, Undo, keyboard focus and narrow layouts. An Activity entry must distinguish chosen, applied and measured states. Do not treat model confidence as measured recovery, or a live smoke as a controller benchmark.
+
+Commit messages use `:emoji: verb[area]: brief description` with a `Generated-by: Codex` trailer for Codex-assisted commits. Keep local drafts, model receipts, budget logs and machine-specific QA artifacts outside the source repository. Publishing code, a deployment or an article requires the applicable task authorization; this guide grants none.

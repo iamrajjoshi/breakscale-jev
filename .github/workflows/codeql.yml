@@ -2,9 +2,9 @@ name: CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, raj--switchyard--jev-recovery]
   pull_request:
-    branches: [main]
+    branches: [main, raj--switchyard--jev-recovery]
   # A weekly run catches new queries landing in CodeQL itself, not just new code.
   schedule:
     - cron: '31 4 * * 1'

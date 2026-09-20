@@ -1,14 +1,19 @@
 # Security
 
-Breakscale runs entirely in the browser. It has no backend, no accounts, and sends no data
-anywhere; a saved design lives in your own browser storage or in a link you choose to share.
+Switchyard is a fork of Breakscale with an added local Node server and JEV integration. The simulator runs in the browser, but the application is not entirely browser-only and model use sends data outside the machine.
 
-That limits the blast radius of most issues, but not all of them. If you find something that could
-harm a user, for example a crafted share link that executes script when opened, please report it
-privately rather than opening a public issue.
+## Data and service boundaries
 
-Use GitHub's [private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
-on this repository. You should get a response within a week.
+The Node server binds to loopback by default. It loads the TypeSafe credential server-side from `TYPESAFE_API_KEY` or the configured local credential file. When JEV is enabled, requests to `https://api.typesafe.ai/v1/systemone` include simulated component state, topology, settings, measurements and candidate actions. The retained design API can also send supplied instructions when invoked. Component labels or other supplied content may therefore reach the provider; do not assume a design stays on the device while using JEV.
 
-Please do not report findings from automated scanners without checking they are real and reachable
-in this application.
+Manual simulation works without a model key. `JEV_OFFLINE=1` returns before credential loading and disables model access. Credentials must not enter browser bundles, `VITE_` variables, committed files or public reports.
+
+Saved designs live in browser storage or exported files. This local fork uses fragment-based share links and does not enable upstream hosted sharing or analytics. The upstream share-worker source is retained, but is not run by the local development command.
+
+Request validation, origin checks, bounded model calls and server-side credentials reduce specific risks; they do not make this an authenticated public service. Public hosting needs its own security review. Untrusted imports, shared designs, UI content, dependency behavior and the local API remain relevant attack surfaces.
+
+## Reporting an issue
+
+Report Switchyard-specific vulnerabilities to this fork's maintainer, @iamrajjoshi. Use the private reporting option in [this repository's Security tab](https://github.com/iamrajjoshi/switchyard/security) if it is enabled. If no private channel is listed, ask the maintainer for one without posting exploit details, credentials or sensitive data in a public issue. No response time is guaranteed.
+
+For a problem affecting unmodified Breakscale, follow [upstream's security policy](https://github.com/xevrion/breakscale/security/policy). Include the affected revision, a reproducible description, expected and actual behavior, and the impact. Redact model credentials and personal data, and verify automated scanner findings before reporting them.

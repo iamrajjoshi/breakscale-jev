@@ -3,144 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
-      content="Live system design simulator. Drag the load up and watch latency, queues and errors respond in real time."
+      content="Breakscale by xevrion and contributors, with automatic JEV repair. Change the load, break a component, and measure what happens next."
     />
-    <!--
-      Two icon declarations, not one. The SVG is what a modern browser uses and
-      the only one that stays sharp at any size, but plenty of clients ask for
-      /favicon.ico by convention regardless of what is declared here, and
-      Google's crawler is one of them. Serving only the SVG left that request
-      404ing and the search result showing a placeholder globe.
-    -->
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" sizes="48x48" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-    <!--
-      The title leads with what people search for, not with the product name.
-      "Breakscale" alone only finds readers who already know it exists; the
-      name still comes first for anyone who does, and the phrase after it is
-      what someone types when they do not.
-    -->
-    <title>Breakscale: System Design Simulator You Can Break</title>
-
-    <!-- Social preview. Without these a shared link renders as a bare URL,
-         which for a visual tool throws away the one thing most likely to make
-         somebody click it. -->
-    <link rel="canonical" href="https://breakscale.vercel.app/" />
-    <meta property="og:url" content="https://breakscale.vercel.app/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Breakscale" />
-    <meta property="og:title" content="Breakscale" />
-    <meta
-      property="og:description"
-      content="Build a system, load it until it breaks, and watch why. A system design simulator for learning distributed systems."
-    />
-    <meta property="og:image" content="https://breakscale.vercel.app/og.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta
-      property="og:image:alt"
-      content="Breakscale: a client, an API server and a database wired in a line, the database out of queue and failing."
-    />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://breakscale.vercel.app/og.png" />
-    <meta name="twitter:title" content="Breakscale" />
-    <meta
-      name="twitter:description"
-      content="Build a system, load it until it breaks, and watch why. A system design simulator for learning distributed systems."
-    />
-
-    <!--
-      Structured data. SoftwareApplication is what a search engine expects for
-      a tool; LearningResource is what actually describes this one, and almost
-      nothing in the system design space claims it. Both are declared because
-      the two answer different questions: "what is this" and "who is it for".
-
-      Organization carries sameAs to the repository, which is the one link
-      that ties this site to the project as a single entity rather than two
-      unrelated things that happen to share a name.
-    -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "SoftwareApplication",
-            "name": "Breakscale",
-            "url": "https://breakscale.vercel.app/",
-            "applicationCategory": "EducationalApplication",
-            "operatingSystem": "Any browser",
-            "description": "A discrete-event system design simulator. Build a topology, push traffic through it, and watch latency percentiles, queue backlogs and failure cascades respond in real time.",
-            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-            "license": "https://opensource.org/licenses/MIT",
-            "isAccessibleForFree": true
-          },
-          {
-            "@type": "Organization",
-            "name": "Breakscale",
-            "url": "https://breakscale.vercel.app/",
-            "description": "An open source discrete-event simulator for learning how distributed systems behave under load.",
-            "sameAs": ["https://github.com/xevrion/breakscale"]
-          },
-          {
-            "@type": "LearningResource",
-            "name": "Breakscale",
-            "url": "https://breakscale.vercel.app/",
-            "learningResourceType": "simulation",
-            "educationalLevel": "undergraduate",
-            "teaches": [
-              "distributed systems",
-              "queueing theory",
-              "latency percentiles",
-              "load balancing",
-              "caching",
-              "circuit breakers",
-              "sharding",
-              "autoscaling"
-            ],
-            "isAccessibleForFree": true
-          }
-        ]
-      }
-    </script>
+    <title>Switchyard · Build systems, watch traffic</title>
   </head>
   <body>
-    <!--
-      The app is client rendered, so a crawler that does not run JavaScript
-      sees an empty document and a reader with JavaScript off sees nothing at
-      all. This heading and paragraph are the one piece of the page that does
-      not need the bundle: they name what this is in the markup itself.
-
-      Styled inline rather than through .sr-only in index.css, because that
-      stylesheet arrives with the bundle and the text would be visible until
-      it did. Hidden from the accessibility tree is NOT wanted here: a screen
-      reader landing on the page should hear the name before the canvas
-      loads, which is the same reason the h1 is a real heading rather than a
-      meta tag.
-    -->
-    <div
-      style="
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-      "
+    <noscript
+      >This simulator needs JavaScript. Switchyard is based on the MIT-licensed
+      Breakscale project.</noscript
     >
-      <h1>Breakscale: a system design simulator you can break</h1>
-      <p>
-        Build a distributed system on a canvas, push traffic through it, and watch real
-        queueing behaviour emerge: latency percentiles climbing, queues filling, circuit
-        breakers tripping and retry storms collapsing a system that was healthy a moment
-        earlier. Every number comes from a discrete-event simulation rather than a
-        formula. Free, open source, and it runs entirely in your browser.
-      </p>
-    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

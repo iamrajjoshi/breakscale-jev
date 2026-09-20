@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from './presence';
+import { useModalFocus } from './useModalFocus';
 import './Share.css';
 
 /* ==========================================================================
@@ -52,19 +53,12 @@ interface Props {
 export function Share({ open, state, onClose, onShare, onExport }: Props) {
   const presence = usePresence(open);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open, cardRef, onClose);
   // Which URL the clipboard holds, rather than a boolean: generating a
   // second link then leaves the button reading "Copy link" again without
   // an effect having to notice the change and reset a flag.
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   // Select the whole link as soon as there is one, so the keyboard path is
   // Ctrl+C without a tab stop in between, and the eye lands on the thing
@@ -89,9 +83,15 @@ export function Share({ open, state, onClose, onShare, onExport }: Props) {
   };
 
   return createPortal(
-    <div className={'sh-root' + (presence.closing ? ' is-closing' : '')}>
+    <div
+      className={'sh-root' + (presence.closing ? ' is-closing' : '')}
+      inert={presence.closing || undefined}
+    >
       <div className="sh-scrim" onPointerDown={onClose} />
       <div
+        ref={cardRef}
+        tabIndex={-1}
+        onKeyDown={(event) => event.stopPropagation()}
         className="sh-card"
         role="dialog"
         aria-modal="true"

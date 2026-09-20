@@ -4,31 +4,22 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
-# Nothing here writes to the repository, so start from zero and grant per job.
 permissions: {}
 
-# Titles follow conventional commits because we squash-merge, so the PR title
-# becomes the commit message and the changelog writes itself. Scopes are
-# optional; this is a single package, so requiring them would only be friction.
 jobs:
   semantic:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      pull-requests: read
     steps:
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+      - name: Check title format
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          types: |
-            feat
-            fix
-            docs
-            refactor
-            perf
-            test
-            build
-            ci
-            chore
-            revert
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node <<'JS'
+          const title = process.env.PR_TITLE ?? '';
+          const format = /^:(?:sparkles|bug|books|recycle|wrench|mag|test_tube|zap|art): (?:feat|fix|docs|ref|chore|nit|test|perf|style)\[[a-z0-9][a-z0-9_-]*\]: \S(?:.*\S)?$/;
+          if (!format.test(title)) {
+            console.error('Use :emoji: verb[area]: brief description, for example :bug: fix[operator]: preserve watch after edits');
+            process.exitCode = 1;
+          }
+          JS

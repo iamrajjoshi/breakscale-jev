@@ -438,7 +438,7 @@ export function Palette({ onAdd, onAddAnnotation, armedTool }: PaletteProps) {
               ref={searchRef}
               type="search"
               className="pal-search-input"
-              placeholder="Search components"
+              placeholder="Find a component"
               aria-label="Search components"
               value={query}
               onChange={onSearchChange}

@@ -656,6 +656,9 @@
   gap: var(--sp-7);
   min-width: 0;
 }
+.traffic-headline:has(.traffic-empty) {
+  flex: 1 1 0;
+}
 
 /* No components on the canvas: one quiet sentence where the numbers go. */
 .traffic-empty {
@@ -944,7 +947,7 @@
   }
 }
 
-@media (max-width: 1000px) {
+@media (min-width: 721px) and (max-width: 1000px) {
   .traffic {
     gap: var(--sp-4);
   }

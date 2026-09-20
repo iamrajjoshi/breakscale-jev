@@ -289,21 +289,9 @@ const DETAIL_ZOOM = 0.7;
 /** Below this only the name, health rule and meter survive. */
 const MINIMAL_ZOOM = 0.5;
 
-/** Auto-fit margin and clamp. 1.5 stops a 3-node preset becoming a billboard.
- *
- * FIT_MIN is deliberately DETAIL_ZOOM, not a rounder 0.6. Auto-fit runs on
- * every preset load, so it decides what a student sees first — and at 0.6
- * the fitted view landed in the 0.6-0.7 band where the body numbers are
- * suppressed, presenting the flagship preset as a row of empty boxes. The
- * floor and the legibility threshold are the same number by definition:
- * never auto-fit to a zoom at which the diagram stops showing its data. */
-/* The auto-fit margin, in CSS px of the visible rect.
- *
- * 64 is generous on a desktop and expensive on a phone: it spends 128 of a
- * 390px width on air, which is a third of the screen, and the fit clamps at
- * FIT_MIN anyway so that air buys nothing. A narrow viewport gets a tighter
- * frame; the diagram still has room to breathe, and more of it lands on
- * screen before the reader has to pan. */
+/** Fit the visible canvas without reducing large designs to unreadable dots.
+ * The 0.35 floor leaves larger examples pannable; the three-node starter fits
+ * on a phone. Margins use the uncovered view width, including open panels. */
 const FIT_MARGIN_WIDE = 64;
 const FIT_MARGIN_NARROW = 24;
 const NARROW_FIT_WIDTH = 720;
@@ -311,7 +299,7 @@ const NARROW_FIT_WIDTH = 720;
 function fitMarginFor(viewWidth: number): number {
   return viewWidth <= NARROW_FIT_WIDTH ? FIT_MARGIN_NARROW : FIT_MARGIN_WIDE;
 }
-const FIT_MIN = DETAIL_ZOOM;
+const FIT_MIN = 0.35;
 const FIT_MAX = 1.5;
 
 /*
@@ -498,6 +486,8 @@ export interface CanvasProps {
    * bump it, so add/delete/undo keep the camera still. See the fit effect.
    */
   fitSignal?: number;
+  /** User input invalidates automatic fits that were queued before it. */
+  viewInteractionRef?: MutableRefObject<number>;
   /**
    * Optional: an element whose bounding rect is the part of the canvas NOT
    * covered by the shell's floating panels (the .stage-safe sentinel). The
@@ -621,6 +611,13 @@ export function readoutFor(
 ): Readout {
   const util = clamp(s.utilization, 0, 1);
   const losing = s.shedRate + s.timeoutRate > 0;
+  const hasTraffic =
+    s.arrivalRate > 0 ||
+    s.throughput > 0 ||
+    s.inFlight > 0 ||
+    s.queued > 0 ||
+    s.errorRate > 0 ||
+    losing;
 
   switch (kind) {
     case 'client': {
@@ -665,9 +662,11 @@ export function readoutFor(
     case 'cache': {
       const hit = clamp(s.hitRate, 0, 1);
       // A cache's meter shows misses: an empty bar is a cache doing its job.
-      const miss = 1 - hit;
+      const miss = hasTraffic ? 1 - hit : 0;
       return {
-        primary: { value: formatPct(hit), label: 'hit' },
+        primary: hasTraffic
+          ? { value: formatPct(hit), label: 'hit' }
+          : { value: 'idle', label: '' },
         a: { value: formatMs(s.p99), label: 'p99' },
         b: { value: formatRate(s.throughput), label: 'served' },
         load: miss,
@@ -905,9 +904,11 @@ export function readoutFor(
        origin-fetch rate is the load that actually reaches your servers. */
     case 'cdn': {
       const hit = clamp(s.hitRate, 0, 1);
-      const miss = 1 - hit;
+      const miss = hasTraffic ? 1 - hit : 0;
       return {
-        primary: { value: formatPct(hit), label: 'hit' },
+        primary: hasTraffic
+          ? { value: formatPct(hit), label: 'hit' }
+          : { value: 'idle', label: '' },
         a: { value: formatRate(s.originFetchRate), label: 'origin' },
         b: { value: formatRate(s.throughput), label: 'served' },
         load: miss,
@@ -3357,6 +3358,7 @@ export default function Canvas({
   onToolChange,
   fitSignal = 0,
   visibleRef,
+  viewInteractionRef,
 }: CanvasProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -3673,7 +3675,8 @@ export default function Canvas({
    */
   const zoomAt = useCallback((px: number, py: number, next: (k: number) => number) => {
     setView((v) => {
-      const k = clamp(Math.round(next(v.k) * 1000) / 1000, MIN_ZOOM, MAX_ZOOM);
+      const minimum = (surfaceRef.current?.clientWidth ?? 721) <= 720 ? 0.1 : MIN_ZOOM;
+      const k = clamp(Math.round(next(v.k) * 1000) / 1000, minimum, MAX_ZOOM);
       if (k === v.k) return v;
       const wx = (px - v.x) / v.k;
       const wy = (py - v.y) / v.k;
@@ -5530,14 +5533,18 @@ export default function Canvas({
       }
       if (pendingRef.current) return;
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => fitToContentRef.current());
+      const interaction = viewInteractionRef?.current;
+      raf = requestAnimationFrame(() => {
+        if (!pendingRef.current && interaction === viewInteractionRef?.current)
+          fitToContentRef.current();
+      });
     });
     ro.observe(el);
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, []);
+  }, [viewInteractionRef]);
 
   const zoomBy = useCallback(
     (factor: number) => zoomCentered((k) => k * factor),

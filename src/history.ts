@@ -378,15 +378,31 @@ function sameStructure(a: Topology, b: Topology): boolean {
  * that threw away the running simulation would be worse than no undo.
  */
 export function syncEngine(engine: EngineLike, from: Topology, to: Topology): void {
-  if (sameStructure(from, to)) {
-    for (let i = 0; i < to.nodes.length; i++) {
-      const prev = from.nodes[i]!;
-      const next = to.nodes[i]!;
-      if (!configEqual(prev.config, next.config)) {
-        engine.updateNodeConfig(next.id, { ...next.config });
-      }
+  // A design command can change a setting and the graph in one transaction.
+  // Tell the engine which surviving-node settings were explicitly authored
+  // before rebuilding: otherwise it may preserve an old live scale as though
+  // an autoscaler had written it. Unchanged settings keep their live values.
+  for (const next of to.nodes) {
+    const prev = from.nodes.find((node) => node.id === next.id);
+    if (prev?.kind === next.kind && !configEqual(prev.config, next.config)) {
+      const patch = Object.fromEntries(
+        [...new Set([...Object.keys(prev.config), ...Object.keys(next.config)])]
+          .filter(
+            (key) =>
+              prev.config[key as keyof typeof prev.config] !==
+              next.config[key as keyof typeof next.config],
+          )
+          .map((key) => [
+            key,
+            // An omitted instance count means one machine. Write that authored
+            // value explicitly so reset cannot resurrect the scale being undone.
+            key === 'instances'
+              ? (next.config.instances ?? 1)
+              : next.config[key as keyof typeof next.config],
+          ]),
+      );
+      engine.updateNodeConfig(next.id, patch);
     }
-    return;
   }
-  engine.setTopology(to);
+  if (!sameStructure(from, to)) engine.setTopology(to);
 }

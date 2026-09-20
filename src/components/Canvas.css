@@ -1172,6 +1172,14 @@
   border: var(--bw) solid var(--border);
 }
 
+/* Gesture instructions are available in Keyboard shortcuts. At narrower
+   sizes this decorative reminder would overlap the panel toggles. */
+@media (max-width: 1200px) {
+  .cv-hint-idle {
+    display: none;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Note format bar.
 

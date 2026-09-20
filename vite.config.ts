@@ -105,6 +105,9 @@ function siteOrigin(): Plugin {
 }
 
 export default defineConfig({
+  server: {
+    watch: { ignored: ['**/docs/qa/**', '**/test-results/**'] },
+  },
   plugins: [react(), glossaryPage(), siteOrigin()],
   build: {
     /*

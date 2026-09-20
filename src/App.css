@@ -1,259 +1,51 @@
-/* ==========================================================================
-   App shell.
-
-   Fixed viewport: the page itself never scrolls. Every region that can
-   overflow scrolls inside itself, so the top bar and the metrics strip stay
-   put no matter how long the topology or the config form gets.
-
-   This file owns the GRID ONLY, plus the wordmark that lives in the bar.
-   Each panel paints its own surface, border and padding in its own
-   stylesheet, so a panel can be moved between grid slots without dragging
-   its appearance along with it.
-   ========================================================================== */
-
-/* The canvas is the app, so it gets the whole window and everything else
-   floats over it. A grid row for a bar would reserve 72px of screen from the
-   one thing the reader came to look at, on every screen size, forever. */
+/* The live system owns the screen. One toolbar groups traffic and its
+   measurements with editing and reference controls; there is no name card. */
 .app {
   position: relative;
   height: 100vh;
-  /* dvh keeps things reachable on mobile browsers whose toolbars collapse. */
   height: 100dvh;
   overflow: hidden;
   background: var(--bg);
 }
 
-/* --------------------------------------------------------------------------
-   Top bar.
-
-   Sized to its contents rather than to a magic number. The traffic control
-   carries the 34px p99 hero under its caption plus a slider with a scale
-   row beneath it; the old fixed 56px could not hold that and the panel had
-   to defend itself with a compensating margin. A min-height with real
-   vertical padding lets the bar be as tall as the type honestly needs, and
-   nothing inside it has to work around the container any more.
-   -------------------------------------------------------------------------- */
-
-/* An island floating over the canvas, not a bar dividing the window.
-
-   It keeps a surface and a shadow rather than going transparent: the things
-   on it are live numbers and a control, and text sitting directly on a
-   moving diagram is unreadable. What it gives up is the full-width rule and
-   the 72px of reserved height, so the canvas runs edge to edge underneath.
-
-   pointer-events are returned to the children, so the gap between the brand
-   and the readouts is canvas you can actually drag through. */
 .app-bar {
   position: absolute;
   top: var(--sp-3);
   left: var(--sp-3);
   right: var(--sp-3);
   z-index: 40;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--sp-3);
-  /* The BAR itself is only a positioning strip: it paints nothing and
-     catches nothing, so the canvas between its islands is draggable. Each
-     island below carries its own surface. */
-  background: none;
-  pointer-events: none;
-}
-
-/* An island. Three of them: the wordmark and history on the left, the load
-   control in the middle, the readouts and the menu on the right. Grouping
-   them this way rather than as one long bar is what leaves canvas visible
-   between them, which is the whole point of floating over it. */
-.app-island {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  /* One height for all three, so they read as a row of islands rather than
-     as three unrelated boxes. The load control is the tallest thing here
-     (a slider over its scale row), so it sets the number and the others
-     match it instead of each sizing to its own contents. */
-  min-height: 56px;
-  padding: 0 var(--sp-3);
+  gap: var(--sp-4);
+  padding: var(--sp-1) var(--sp-3);
   border: var(--bw) solid var(--border);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-md);
-  pointer-events: auto;
+  box-shadow: var(--shadow-sm);
 }
 
-/* The load control takes the slack, but only up to a point: allowed to grow
-   without limit it spans the window and the three islands read as one solid
-   bar again, which is the thing this layout exists to stop. Capped, the
-   canvas shows between them on a wide screen and the island shrinks
-   gracefully on a narrow one. */
-.app-island-load {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 940px;
-}
-
-/* Pushes the menu to the far right, leaving the gap between it and the load
-   island as visible canvas rather than as dead space inside a bar. */
-.app-island-menu {
-  margin-left: auto;
-  gap: var(--sp-1);
-}
-
-/* The source link carries the mark alone, so it reads as an icon button
-   rather than borrowing the accent that means "you did this" in this app. */
-.app-source-link {
-  color: var(--text-dim);
-  text-decoration: none;
-}
-
-.app-source-link:hover {
-  color: var(--text);
-}
-
-/* With a star count, the button is no longer a pure icon square: it grows
-   into a pill just wide enough for the mark and the digits, per this app's
-   own rule that every number renders in the mono stack with tabular
-   figures. Width is the only thing that changes, so neighbouring buttons in
-   the bar never shift. */
-.app-source-link.has-stars {
-  width: auto;
-  padding: 0 var(--sp-3) 0 var(--sp-2);
-  gap: var(--sp-1);
-}
-
-.app-source-stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 16px; /* matches the GitHub mark's box exactly, so the two sit on one line */
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--fs-sm);
-  line-height: 16px;
-  color: var(--text);
-  /* Fades in on arrival rather than snapping in, because the button next to
-     it is otherwise static chrome and a number appearing with no transition
-     reads as a layout bug rather than as data that just arrived. */
-  animation: app-stars-in var(--dur-slow) var(--ease-out);
-}
-
-/* Positioning context for the glyph and its rays, sized to the GitHub
-   mark's own 16px box so the two sit on one line: a visibly smaller glyph
-   is what read as misaligned earlier even though both boxes were already
-   centred vertically. */
-.app-source-star-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex: none;
-  /* --warn rather than --accent: this button's own comment says the accent
-     colour means "you did this" in this app, and a star is not that. --warn
-     is the closest token to the amber GitHub itself stars with. */
-  color: var(--warn);
-}
-
-.app-source-star-glyph {
-  flex: none;
-}
-
-/* A light sweep across the button on hover: the widely used pattern of a
-   narrow skewed gradient strip parked off the left edge and slid across,
-   clipped by the button's own overflow. It is one transform on one
-   pseudo-element, so it composites on the GPU and never touches layout.
-   Chosen over a sparkle burst because this button sits beside live
-   simulation numbers, and a sweep reads as polish where a burst competes
-   for the eye. */
-.app-source-link.has-stars {
-  position: relative;
-  overflow: hidden;
-}
-
-.app-source-link.has-stars::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -60%;
-  width: 28px;
-  background: linear-gradient(90deg, transparent, var(--sheen), transparent);
-  /* Driven as a TRANSITION rather than a keyframe run, so the highlight is a
-     real position the button eases to and back from: entering sweeps it
-     across, leaving sweeps it home again, and a pointer that turns back
-     halfway is followed rather than ignored. Transformed rather than moved
-     by `left`, so each frame is compositor work and the sweep never costs
-     the running simulation a layout pass. */
-  transform: translateX(0) skewX(-20deg);
-  pointer-events: none;
-  transition: transform var(--dur-slow) var(--ease-out);
-}
-
-.app-source-link.has-stars:hover::after {
-  transform: translateX(190px) skewX(-20deg);
-}
-
-@keyframes app-stars-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .app-source-stars {
-    animation: none;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Wordmark.
-
-   Name over tagline, set tight so the pair reads as one block and the bar
-   does not grow to accommodate two separate lines of leading.
-   -------------------------------------------------------------------------- */
-
-.app-brand {
+.app-island {
   display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: var(--sp-1);
+  align-items: center;
+  min-height: 48px;
   min-width: 0;
 }
 
-.app-title {
-  margin: 0;
-  font-size: var(--fs-base);
-  line-height: var(--lh-label);
-  font-weight: var(--fw-num);
-  letter-spacing: var(--tr-base);
-  color: var(--text);
-  white-space: nowrap;
+.app-island-load {
+  grid-column: 1;
+  grid-row: 1;
 }
 
-/* The tagline is the friendliest sentence in the app, so it gets real prose
-   sizing rather than being shrunk into a caption. --text-dim, not
-   --text-faint: this is a sentence to be read, not a unit annotation. */
-.app-tagline {
-  margin: 0;
-  font-size: var(--fs-sm);
-  line-height: var(--lh-label);
-  font-weight: var(--fw-body);
-  letter-spacing: var(--tr-sm);
-  color: var(--text-dim);
-  white-space: nowrap;
+.app-island-menu {
+  grid-column: 2;
+  grid-row: 1;
+  gap: var(--sp-1);
+  padding-left: var(--sp-3);
+  border-left: var(--bw) solid var(--border);
 }
 
-/* The traffic control takes the rest of the bar. min-width:0 lets it
-   actually shrink instead of forcing the bar wider than the viewport. */
-/* The saved indicator.
-
-   Deliberately quiet. It answers a question a student asks once ("will I
-   lose this?") and then stops mattering, so it earns a dot and a word and
-   no more. Beside the wordmark because that is where the app talks about
-   itself rather than about the system on the canvas. */
+/* Saving is secondary to traffic and remains quiet beside the edit controls. */
 .app-saved {
   display: flex;
   flex: none;
@@ -356,54 +148,15 @@
   line-height: 1;
 }
 
-/* --------------------------------------------------------------------------
-   The bar's width cascade. What gives way, in order:
-
-     1. 1900  the printed shortcut keys and the widest gaps. Annotations,
-              and the shortcuts dialog documents every binding.
-     2. 1700  the reference labels collapse to their icons. aria-label and
-              the titles keep the names at every width.
-     3. 1620  the tagline. Charm, not information.
-     4. 1360  the rails narrow and the bar's padding tightens (below).
-     5. ~T860 the secondary readouts (Goodput / Errors / Dropped) go —
-              but that step lives on the TRAFFIC CONTROL'S OWN WIDTH as a
-              container query in Inspector.css, not on the viewport,
-              because what the readouts actually compete with is the
-              slider beside them, not the window.
-     6. 1000  the bar's remaining gaps tighten.
-
-   What never gives way: the load slider (the cause), the p99 hero (the
-   effect), and the transport. They are the app.
-
-   THE THRESHOLDS SIT ABOVE THE POINT WHERE A STEP DOWN IN PRIORITY WOULD
-   OTHERWISE FIRE, not merely above the bar's min-content. Measured with
-   the icon transport (118px) and all four reference buttons labelled:
-   brand 170 + undo 68 + buttons 493 + six 40px gaps + padding leaves the
-   traffic control less than its 860px readout threshold below ~1910, so
-   the keys go at 1900 or the ANNOTATIONS would outlive the READOUTS; the
-   same arithmetic with sp-5 gaps (chrome ~828) puts the label step at
-   1700. Each step keeps every control on screen and the priority order
-   intact down to the next one.
-   -------------------------------------------------------------------------- */
-
+/* Reference labels give space to traffic as the toolbar narrows. */
 @media (max-width: 1900px) {
   .app-glossary-key {
     display: none;
-  }
-
-  .app-bar {
-    gap: var(--sp-5);
   }
 }
 
 @media (max-width: 1700px) {
   .app-glossary-label {
-    display: none;
-  }
-}
-
-@media (max-width: 1620px) {
-  .app-tagline {
     display: none;
   }
 }
@@ -466,18 +219,18 @@
      put the components toggle underneath it. */
   --bar-clear: 80px;
 
-  --rail-w: 224px;
-  --ins-w: 320px;
+  --rail-w: var(--rail-requested, 224px);
+  --ins-w: var(--ins-requested, 320px);
   /* The strip's height is a FIXED clamp, not content-sized. As an overlay
      its height is part of the shell's geometry contract (the sentinel, the
      toggles and the ledger all need the same number), and its charts
      already scroll internally when they want more. 26vh capped at 260px
      keeps the diagram the dominant half of the screen at every window. */
-  --strip-h: clamp(196px, 26vh, 260px);
+  --strip-h: var(--strip-requested, clamp(196px, 26vh, 260px));
   /* dvh for the same reason .app uses it: on a phone the charts sheet reads
      this, and vh would size it against a window taller than the visible
      one. Harmless on a desktop, where the two are identical. */
-  --strip-h: clamp(196px, 26dvh, 260px);
+  --strip-h: var(--strip-requested, clamp(196px, 26dvh, 260px));
 }
 
 /* --------------------------------------------------------------------------
@@ -927,17 +680,13 @@
      dragged to 420px on a wide screen would keep all 420px here and leave
      almost no canvas. The inline value is therefore a MAX rather than the
      width itself, and the panel takes whichever is smaller. */
-  .app-slot-left {
-    width: min(var(--rail-w), 200px);
+  .app-body {
+    --rail-w: min(var(--rail-requested, 224px), 200px);
+    --ins-w: min(var(--ins-requested, 320px), 288px);
   }
-
-  .app-slot-right {
-    width: min(var(--ins-w), 288px);
-  }
-
-  /* The bar's padding tightens with the rails. */
-  .app-bar {
-    padding: var(--sp-3) var(--sp-4);
+  .app-slot-left .pr,
+  .app-slot-right .pr {
+    display: none;
   }
 }
 
@@ -953,10 +702,24 @@
    still needs.
    -------------------------------------------------------------------------- */
 
-@media (max-width: 1000px) {
+@media (min-width: 721px) and (max-width: 860px) {
   .app-bar {
-    gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-3);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .app-island-menu {
+    grid-column: 1;
+    grid-row: 1;
+    padding-left: 0;
+    border-left: 0;
+  }
+  .app-island-menu .app-history {
+    margin-right: auto;
+  }
+  .app-island-load {
+    grid-column: 1;
+    grid-row: 2;
+    border-top: var(--bw) solid var(--border);
   }
 }
 
@@ -975,15 +738,18 @@
 @media (max-height: 720px) {
   /* Same reasoning as the width override above: a MAX, not a replacement,
      because the dragged value is inline and would otherwise win. */
-  .app-slot-bottom {
-    height: min(var(--strip-h), clamp(150px, 24vh, 196px));
+  .app-body {
+    --strip-h: min(var(--strip-requested, 196px), clamp(150px, 24dvh, 196px));
+  }
+  .app-slot-bottom .pr {
+    display: none;
   }
 }
 
 /* --------------------------------------------------------------------------
    Undo / redo cluster.
 
-   Two icon buttons set as one visual unit beside the wordmark. flex:none for
+   Two icon buttons set as one visual unit beside the reference controls. flex:none for
    the same reason the glossary button is: the slider gives up width first.
    -------------------------------------------------------------------------- */
 
@@ -1142,11 +908,14 @@
     top: 0;
     left: 0;
     right: 0;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     padding: 0;
-    /* It is a bar again, not three things floating: at this width the gaps
-       between islands were not canvas you could use, just holes. */
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    /* On phones the toolbar meets the screen edges above the canvas. */
     background: var(--surface);
     border-bottom: var(--bw) solid var(--border);
     pointer-events: auto;
@@ -1155,42 +924,47 @@
   .app-island {
     min-height: 0;
     gap: var(--sp-2);
-    padding: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2);
     border: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
 
-  .app-island-brand {
-    order: 1;
-    flex: 1 1 auto;
-  }
-
   .app-island-menu {
-    order: 2;
-    margin-left: 0;
-    padding-left: 0;
+    grid-column: 1;
+    grid-row: 1;
+    padding: var(--sp-2);
+    border-left: 0;
   }
 
   /* The load control is the one thing a reader touches constantly, so it
-     gets its own full-width row under the identity row, with a rule
+     gets its own full-width row under the utility controls, with a rule
      between them. */
   .app-island-load {
-    order: 3;
+    grid-row: 2;
     flex: 1 1 100%;
     max-width: none;
     border-top: var(--bw) solid var(--border);
+    grid-column: 1 / -1;
   }
 
-  .app-tagline,
+  .app-share-btn span {
+    display: none;
+  }
+
+  .app-share-btn {
+    width: 36px;
+    padding-inline: 0;
+  }
+
   .app-saved {
     display: none;
   }
 
   .app-history {
-    margin-left: auto;
-    gap: var(--sp-2);
+    margin-right: auto;
+    gap: var(--sp-1);
   }
 
   .app-history .btn {
@@ -1238,7 +1012,10 @@
        edge off the screen. `top: auto` lets the height rule position it,
        and this stops it ever starting above the header. */
     top: auto;
-    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(
+      var(--tabbar-h) + var(--operator-height, 48px) + 16px +
+        env(safe-area-inset-bottom, 0px)
+    );
     left: 0;
     right: 0;
     width: auto;
@@ -1267,8 +1044,10 @@
        top edge cannot leave the screen even mid-toolbar-transition. */
     max-height: min(
       62dvh,
-      calc(100dvh - var(--bar-clear) - var(--tabbar-h) - var(--sp-3)),
-      calc(100dvh - var(--tabbar-h) - 96px)
+      calc(
+        100dvh - var(--bar-clear) - var(--tabbar-h) - var(--operator-height, 48px) -
+          28px
+      )
     );
   }
 
@@ -1296,16 +1075,41 @@
      handle cannot resize a full-width sheet. Every one of them was a
      floating box competing with the diagram for the same pixels. */
   .pr,
-  .cv-zoom,
   .cv-ledger,
   .stage-toggle {
     display: none;
+  }
+
+  .app-body .cv-zoom {
+    display: flex;
+    top: var(--sp-2);
+    right: var(--sp-2);
+    bottom: auto;
+    z-index: 5;
+  }
+
+  .stage-touch-hint {
+    position: absolute;
+    top: var(--sp-2);
+    left: var(--sp-3);
+    margin: 0;
+    color: var(--text-dim);
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    pointer-events: none;
   }
 }
 
 @keyframes app-sheet-in {
   from {
     transform: translateY(100%);
+  }
+}
+
+/* Keep 44px touch targets at the narrowest phone width. Help remains in Menu. */
+@media (max-width: 360px) and (pointer: coarse) {
+  .app-about-btn {
+    display: none;
   }
 }
 

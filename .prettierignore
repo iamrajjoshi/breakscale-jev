@@ -1,4 +1,11 @@
-bun.lock
 dist
 node_modules
-public/__harness.js
+artifacts
+test-results
+playwright-report
+docs/qa
+docs/upstream
+docs/*-v2.md
+
+# Preserve upstream license bytes
+public/fonts/Caveat/OFL.txt

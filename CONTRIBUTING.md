@@ -1,82 +1,49 @@
-# Contributing to Breakscale
+# Contributing to Switchyard
 
-Thanks for taking the time. Breakscale is a teaching tool, so the bar for a change is not only
-"does it work" but "does it help someone understand distributed systems better".
+Switchyard is a fork of [Breakscale](https://github.com/xevrion/breakscale) by xevrion and contributors. The canvas, simulator and teaching material come from that project. This fork adds a bounded JEV repair watcher and its local Node backend.
 
-Do not worry if you get any of the process below wrong, or if you have not contributed to a
-project before. Say so and we will help. A lot of the people this tool is built for are students,
-and the same goes for the people building it.
+Send Switchyard bugs and pull requests to [iamrajjoshi/switchyard](https://github.com/iamrajjoshi/switchyard). Changes intended for the original simulator belong in [upstream Breakscale](https://github.com/xevrion/breakscale), following its contribution guide. An issue in one repository does not notify or assign work to the other project's maintainers.
 
-## Before you start
-
-**Found something small and obvious?** Send the pull request. No ceremony needed.
-
-**Want to add a component, a preset, or anything touching the engine?** Open an issue first and
-describe the approach. It takes a few minutes and it saves you writing something that then has to
-be rewritten.
-
-**Want to work on an existing issue?** Comment on it and it will be assigned to you, so two people
-do not build the same thing. You do not have to wait for the assignment to land before you start,
-it is there to stop collisions rather than to gate you.
-
-Issues carry labels that say what they are and roughly where they live. `good first issue` means
-what it says: each one names the file and usually the line the fix probably belongs on, so you are
-not hunting for the starting point. `help wanted` is a real task that is not beginner-sized.
-`discussion` means the approach is not settled and code is premature, so comment before you build.
-The `area:` labels (`area:sim`, `area:canvas`, `area:metrics`, `area:presets`, `area:content`) tell
-you which part of the codebase you would be in.
-
-Issues are triaged roughly weekly. If something sits longer than that, a nudge on the thread is
-welcome rather than annoying.
+Read [PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md) and [UPSTREAM.md](UPSTREAM.md) before changing behavior. Small fixes can go directly to a pull request. Discuss larger changes first. This fork currently keeps the upstream simulation files unchanged; changing the engine requires a separate scope decision.
 
 ## Getting set up
 
-You need [Bun](https://bun.sh). Node 20 or newer also works if you prefer npm.
+Use Node 24 or newer and npm; `.node-version` records the development version. Fork Switchyard on GitHub, then clone your fork:
 
-Fork the repo on GitHub first, then:
-
-```bash
-git clone https://github.com/YOUR-USERNAME/breakscale.git
-cd breakscale
-bun install
-bun dev
+```sh
+git clone https://github.com/YOUR-USERNAME/switchyard.git
+cd switchyard
+npm ci --ignore-scripts
+npm run dev
 ```
 
-The app runs at http://localhost:5173.
+The app runs at http://127.0.0.1:4176. The local server serves both the app and model API. Manual simulation works without a model credential; use `JEV_OFFLINE=1` for checks that must not load one. See README.md for opt-in JEV setup.
 
-Work on a branch rather than on `main`, and point `main` at this repository so you can keep it
-current without your fork drifting:
+Use a feature branch based on this fork's default branch. The default is `raj--switchyard--jev-recovery`; CI also supports `main`. When contributing from a personal fork, keep a separate remote for Switchyard:
 
-```bash
-git remote add upstream https://github.com/xevrion/breakscale.git
-git fetch upstream
-git branch --set-upstream-to=upstream/main main
-git checkout -b your-branch-name
+```sh
+git remote add switchyard https://github.com/iamrajjoshi/switchyard.git
+git fetch switchyard
+git switch -c raj--switchyard--your-change switchyard/raj--switchyard--jev-recovery
 ```
 
 Useful commands:
 
-| Command          | What it does                       |
-| ---------------- | ---------------------------------- |
-| `bun dev`        | Start the dev server               |
-| `bun run build`  | Typecheck and build for production |
-| `bun run test`   | Run the test suite                 |
-| `bun run lint`   | Lint                               |
-| `bun run format` | Format with Prettier               |
+| Command                | What it does                                   |
+| ---------------------- | ---------------------------------------------- |
+| `npm run dev`          | Start the app and local API                    |
+| `npm run check`        | Typecheck, lint, test and build                |
+| `npm run format:check` | Check formatting without rewriting files       |
+| `npm run test:browser` | Run Chromium interaction tests with mocked JEV |
+| `npm test`             | Run unit and integration tests                 |
 
-## Checks run automatically
+Format only files you changed, for example `npm exec -- prettier --write src/operator/About.tsx`.
 
-Two git hooks are installed when you run `bun install`:
+## Local and CI checks
 
-- **On commit**, staged files are formatted with Prettier. You cannot commit badly formatted code.
-- **On push**, the full CI suite runs locally: typecheck, lint, format, tests. If any of it fails
-  the push is blocked, with the failure printed.
+Run `npm run check`, `npm run format:check` and `npm run test:browser` before submitting. Default tests use mocked inference; real-model smoke checks are separate opt-in commands.
 
-This mirrors the checks in `.github/workflows/ci.yml`, with one gap: the hook runs on your machine
-only, while CI also runs the tests and the build on Windows. A push that is green locally can still
-turn CI red if a change is sensitive to path separators or drive letters. If you ever need to
-bypass a hook deliberately, `git push --no-verify` works, but expect CI to catch whatever the hook
-would have.
+`npm ci --ignore-scripts` does not install Git hooks. The checked-in `.husky` scripts are optional and must not be assumed active. CI checks typechecking, lint and formatting on Linux, and tests and builds on Linux and Windows. Browser checks currently run separately from that workflow. A successful local run does not establish that every operating system or browser behaves identically.
 
 ## How the project is laid out
 
@@ -85,6 +52,8 @@ src/sim/         the simulation engine. No React, no DOM, no I/O
 src/components/  canvas, inspector, metrics, palette
 src/content/     glossary text
 src/share/       share links: the wire format, encryption, the store client
+src/operator/    JEV watcher, legal repairs and action history
+server/          local API, model transport and credential loading
 src/App.tsx      shell: layout, the animation loop, persistence
 worker/          the Cloudflare Worker behind short share links
 ```
@@ -92,21 +61,9 @@ worker/          the Cloudflare Worker behind short share links
 The important boundary is that `src/sim` knows nothing about the UI. It is a pure discrete-event
 simulator you can drive from a script, which is what makes it testable.
 
-### Share links, and why you do not need the worker
+### Sharing
 
-A design can travel two ways. The whole design can sit in the URL fragment, which needs nothing
-and works offline; or it can go to a small store that hands back an id, which keeps the URL short
-whatever the design. The store never sees a design, because the browser encrypts it first and
-keeps the key in the URL fragment, which browsers do not send to servers.
-
-**You do not need any of that to work on the app.** With no `VITE_SHARE_API` set, which is the
-default, sharing falls back to the fragment format and everything else behaves normally. The
-tests do not need it either: they point the client at a stub rather than at a running worker, so
-`bun run test` passes on a clean checkout.
-
-If you do want to exercise short links, `bun run dev:links` starts the worker alongside the app
-and points one at the other. It needs [Wrangler](https://developers.cloudflare.com/workers/wrangler/),
-which is Cloudflare's CLI, and a free Cloudflare account. Ordinary `bun dev` needs neither.
+This local fork uses fragment-based share links and does not enable upstream hosted sharing. The original `worker/` implementation remains in the repository as upstream source; it is not part of `npm run dev`, and no Cloudflare account is needed for local setup. Share tests use stubs rather than the hosted service.
 
 ## The one rule that matters most
 
@@ -127,6 +84,8 @@ There is a lot of scaffolding in the repo for this. Look at how existing compone
 before adding one.
 
 ## Adding a component
+
+The following inherited notes describe Breakscale extension points. This fork keeps `src/sim` pinned; propose engine additions upstream or agree on a separate integration scope before applying these steps here.
 
 Components live in a registry, so the event loop has no per-kind branching. Adding one means:
 
@@ -210,44 +169,17 @@ generated rather than designed:
 
 ## Pull requests
 
-- One logical change per pull request. If you find an unrelated bug, mention it in an issue.
-- Say what the change does and why. If it changes behaviour, include before and after numbers.
-- For anything visible, include a screenshot.
-- Run `bun run build` and `bun run test` before opening. Use `bun run test`, not `bun test`: the
-  latter bypasses the jsdom setup and reports failures that are not real.
+Keep each pull request to one logical change. Explain the problem and resulting behavior, include relevant verification, and add screenshots for visible changes. Measured simulator output should support claims about behavior; model confidence is not evidence of recovery.
 
-For a new feature or anything touching the engine's architecture, open an issue first and describe
-the approach. It saves you writing something that then needs rewriting.
+Titles follow this fork's commit convention:
 
-### The title
+```text
+:bug: fix[operator]: preserve watch after a manual edit
+```
 
-Pull requests are squash-merged, so the title becomes the commit message on `main` and there is a
-CI check that enforces its shape. Start it with one of these:
+Use `:emoji: verb[area]: brief description`. The supported pairs are `:sparkles: feat`, `:bug: fix`, `:books: docs`, `:recycle: ref`, `:wrench: chore`, `:mag: nit`, `:test_tube: test`, `:zap: perf` and `:art: style`. The PR-title workflow checks this shape. Codex-assisted commits include a `Generated-by: Codex` trailer; do not invent coauthor identities.
 
-`feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
-
-Scopes are optional. This is a single package, so requiring them would be friction for nothing.
-`fix: the minimap viewport shrinks when you pan away` and `fix(test): resolve ROOT with
-fileURLToPath` are both fine.
-
-Write the subject as a plain statement of what changed, lowercase after the prefix, no trailing
-full stop. Look at `git log` for the house style; it leans towards saying what a reader gets rather
-than which function moved.
-
-### What happens after you open it
-
-If this is your first pull request here, the checks will sit waiting for a status that never
-arrives, until a maintainer approves them. That is GitHub's gate on fork pull requests, not
-something you did wrong, and it is usually cleared the same day. After your first merged pull
-request they run automatically from then on.
-
-There are four checks: `check` (typecheck, lint, format, tests, build), `CodeQL`, `semantic` for
-the title, and a Vercel deploy. The Vercel one reports a failure on pull requests from forks
-because it will not build a fork branch without authorisation, so ignore that one; it is not about
-your code.
-
-If a review asks for changes, push follow-up commits rather than amending and force-pushing. The
-squash-merge flattens them anyway, and it lets the reviewer see what moved since they last looked.
+Check results and review availability depend on this fork's GitHub settings. CI, CodeQL and the title workflow are configured in `.github/workflows`; this document does not promise a review time or a preview deployment. When fixing an in-progress commit, amend it in accordance with the repository's Git instructions, coordinating any history changes with collaborators.
 
 ## Reporting bugs
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Preset } from '../sim/presets';
 import { usePresence } from './presence';
+import { useModalFocus } from './useModalFocus';
 import './Examples.css';
 
 /* ==========================================================================
@@ -40,29 +41,12 @@ export function Examples({
   const cardRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState('');
+  useModalFocus(open, cardRef, onClose, searchRef);
 
   /* Reset on OPEN rather than on close, so the list is not blanked out from
      under the reader while the dialog is still sliding away. */
   useEffect(() => {
     if (open) setQuery('');
-  }, [open]);
-
-  /* Focus goes to the search field, because with twenty-three examples the
-     first thing a returning student does is type. Focus returns to whatever
-     opened the dialog. */
-  useEffect(() => {
-    if (!open) return;
-    const opener =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const card = cardRef.current;
-    searchRef.current?.focus();
-    return () => {
-      const active = document.activeElement;
-      const inside = card?.contains(active as Node) ?? false;
-      if (inside || active === document.body || active === null) {
-        opener?.focus();
-      }
-    };
   }, [open]);
 
   if (!mounted) return null;
@@ -89,13 +73,8 @@ export function Examples({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ex-title"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            onClose();
-          }
-        }}
+        tabIndex={-1}
+        onKeyDown={(event) => event.stopPropagation()}
         onAnimationEnd={(e) => {
           if (closing && e.target === e.currentTarget) unmount();
         }}

@@ -1,11 +1,10 @@
 {
-  "name": "breakscale",
+  "name": "switchyard",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:links": "bun run --cwd worker dev & VITE_SHARE_API=http://localhost:8787 vite; kill 0",
+    "dev": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -15,12 +14,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --noEmit",
-    "prepare": "husky"
+    "start": "tsx server/index.ts --production",
+    "test:browser": "playwright test",
+    "test:operator": "vitest run src/operator server",
+    "test:live": "tsx scripts/live-smoke.ts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "test:live:design": "tsx scripts/design-live-smoke.ts",
+    "test:live:recovery": "tsx scripts/autopilot-live-smoke.ts"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
-    "lucide-react": "^1.41.0",
+    "lucide-react": "1.41.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -30,22 +33,22 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^5.0.0",
-    "husky": "^9.1.7",
     "jsdom": "^30.0.1",
-    "lint-staged": "^17.4.1",
     "oxlint": "^1.81.0",
     "prettier": "^3.9.6",
     "typescript": "~7.0.2",
     "vite": "^8.2.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "tsx": "4.23.13",
+    "@playwright/test": "1.63.0"
   },
   "license": "MIT",
-  "description": "Build a system, load it until it breaks, and watch why",
+  "description": "Breakscale with a JEV operator: build it, break it, and watch it recover.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xevrion/breakscale.git"
+    "url": "https://github.com/iamrajjoshi/switchyard.git"
   },
-  "lint-staged": {
-    "*.{ts,tsx,css,json,md}": "prettier --write"
+  "engines": {
+    "node": ">=24"
   }
 }

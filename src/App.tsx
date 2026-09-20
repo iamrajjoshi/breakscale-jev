@@ -17,7 +17,6 @@ import type {
 } from 'react';
 import type { NodeConfig, NodeKind, SimNode, SimSnapshot, Topology } from './sim/types';
 import { useCoarsePointer } from './useCoarsePointer';
-import { useGithubStars, useCountUp, formatStars } from './useGithubStars';
 import { Engine } from './sim/engine';
 import { PRESETS, makeNode } from './sim/presets';
 import { CHALLENGES, challengeById } from './sim/challenges';
@@ -86,6 +85,8 @@ import {
 import { Share, type ShareState } from './components/Share';
 import { DESIGN_FILE_ACCEPT, downloadDesign, readDesignFile } from './designFile';
 import { downloadBlob, svgToPng } from './imageExport';
+import { Operator } from './operator/Operator';
+import { About } from './operator/About';
 import './App.css';
 
 /* ------------------------------------------------------------------ *
@@ -180,6 +181,17 @@ const clampPanel = (key: PanelKey, v: unknown): number => {
  * problem as a phone; a tablet in landscape has neither.
  */
 const PHONE_QUERY = '(max-width: 720px)';
+const COMPACT_QUERY = '(max-width: 1100px)';
+
+function subscribeCompact(onChange: () => void): () => void {
+  const mq = window.matchMedia(COMPACT_QUERY);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+}
+
+function isCompact(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia(COMPACT_QUERY).matches;
+}
 
 function subscribePhone(onChange: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
@@ -632,6 +644,8 @@ export default function App() {
     () => new Set<string>(),
   );
   const [running, setRunning] = useState(true);
+  const [operatorResetEpoch, setOperatorResetEpoch] = useState(0);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   /**
    * The glossary side sheet.
@@ -685,12 +699,8 @@ export default function App() {
   const [layout, setLayout] = useState<LayoutPrefs>(loadLayout);
 
   const phone = useSyncExternalStore(subscribePhone, isPhone, isPhoneServer);
+  const compact = useSyncExternalStore(subscribeCompact, isCompact, isPhoneServer);
   const coarse = useCoarsePointer();
-  /* The real count names the link; the tweened one is only ever drawn, so a
-     screen reader is never read a number the animation happened to be
-     passing through. */
-  const starCount = useGithubStars();
-  const stars = useCountUp(starCount);
 
   /**
    * Where the bar actually ends, so everything that must clear it can.
@@ -713,7 +723,7 @@ export default function App() {
     const el = barRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     /* The bar's BOTTOM edge, not its height.
-    
+
        The bar floats: it sits --sp-3 down from the top, so its height alone
        is short by that offset and the panels started flush against it with
        no gap at all. Reading the bottom of its rect includes the offset
@@ -754,19 +764,19 @@ export default function App() {
     setLayout((l) => ({
       ...l,
       library: !l.library,
-      metrics: !l.library && phone ? false : l.metrics,
+      metrics: !l.library && compact ? false : l.metrics,
     }));
-    if (phone) setInspectorHidden(true);
-  }, [phone]);
+    if (compact) setInspectorHidden(true);
+  }, [compact]);
 
   const toggleMetrics = useCallback(() => {
     setLayout((l) => ({
       ...l,
       metrics: !l.metrics,
-      library: !l.metrics && phone ? false : l.library,
+      library: !l.metrics && compact ? false : l.library,
     }));
-    if (phone) setInspectorHidden(true);
-  }, [phone]);
+    if (compact) setInspectorHidden(true);
+  }, [compact]);
 
   useEffect(() => {
     saveLayout(layout);
@@ -785,10 +795,21 @@ export default function App() {
    */
 
   useEffect(() => {
-    if (selectedIds.size > 0) setInspectorHidden(false);
-  }, [selectedIds]);
+    if (selectedIds.size > 0) {
+      setInspectorHidden(false);
+      if (compact) setLayout((l) => ({ ...l, library: false, metrics: false }));
+    }
+  }, [selectedIds, compact]);
 
-  const toggleInspector = useCallback(() => setInspectorHidden((h) => !h), []);
+  const toggleInspector = useCallback(() => {
+    setInspectorHidden((h) => !h);
+    if (compact) setLayout((l) => ({ ...l, library: false, metrics: false }));
+  }, [compact]);
+
+  useEffect(() => {
+    if (compact)
+      setLayout((l) => (l.library && l.metrics ? { ...l, metrics: false } : l));
+  }, [compact]);
 
   /**
    * The selection, split into the three things it can hold. Node ids and
@@ -902,6 +923,11 @@ export default function App() {
         label: 'Settings',
         icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
         onSelect: () => setSettingsOpen(true),
+      },
+      {
+        label: 'About Switchyard',
+        icon: 'M12 16v-4M12 8h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+        onSelect: () => setAboutOpen(true),
       },
     ],
     [openGlossary, coarse],
@@ -1131,10 +1157,13 @@ export default function App() {
       // uses: updateNodeConfig for a config-only difference, setTopology for
       // structure. Nothing here resets the simulation or its metrics.
       syncEngine(engine, snapRef.current.topology, entry.topology);
+      topoLiveRef.current = entry.topology;
+      snapRef.current = entry;
       setTopology(entry.topology);
       setSelectedIds(new Set(entry.selectedIds));
       setRps(entry.rps);
       setPresetId(entry.presetId);
+      setSnapshot(engine.snapshot());
       toastSeq.current += 1;
       setToast({ text: `${verb} ${entry.label}`, id: toastSeq.current });
     },
@@ -1560,31 +1589,31 @@ export default function App() {
         handleAddNode(kind, maxX + 220, 200);
         return;
       }
-      // Centre the node on the view, snapped to the grid. A small ring of
-      // nearby offsets dodges an exact pile-up from repeated clicks, but the
-      // search never leaves the neighbourhood: on a dense diagram the node
-      // simply lands at the centre and overlaps, which the student can see
-      // and fix — a node placed "helpfully" outside the viewport cannot be.
+      // Search whole node-sized slots around the view center. Sub-node offsets
+      // still overlap, and the old fallback silently buried the existing API.
       const cx = Math.round((centre.x - NODE_W / 2) / GRID) * GRID;
       const cy = Math.round((centre.y - NODE_H / 2) / GRID) * GRID;
       const occupied = (px: number, py: number) =>
-        topology.nodes.some(
-          (n) => Math.abs(n.x - px) < NODE_W && Math.abs(n.y - py) < NODE_H,
+        topoLiveRef.current.nodes.some(
+          (n) =>
+            Math.abs(n.x - px) < NODE_W + GRID * 2 &&
+            Math.abs(n.y - py) < NODE_H + GRID * 2,
         );
-      const STEP = GRID * 4;
-      const ring: [number, number][] = [
-        [0, 0],
-        [STEP, STEP],
-        [-STEP, STEP],
-        [STEP, -STEP],
-        [-STEP, -STEP],
-        [2 * STEP, 0],
-        [0, 2 * STEP],
-        [-2 * STEP, 0],
-        [0, -2 * STEP],
-      ];
-      const spot = ring.find(([dx, dy]) => !occupied(cx + dx, cy + dy)) ?? [0, 0];
-      handleAddNode(kind, cx + spot[0], cy + spot[1]);
+      const stepX = Math.ceil((NODE_W + GRID * 4) / GRID) * GRID;
+      const stepY = Math.ceil((NODE_H + GRID * 4) / GRID) * GRID;
+      for (let radius = 0; radius <= topoLiveRef.current.nodes.length + 1; radius++) {
+        for (let y = -radius; y <= radius; y++) {
+          for (let x = -radius; x <= radius; x++) {
+            if (Math.max(Math.abs(x), Math.abs(y)) !== radius) continue;
+            const px = cx + x * stepX;
+            const py = cy + y * stepY;
+            if (occupied(px, py)) continue;
+            handleAddNode(kind, px, py);
+            setFitNonce((value) => value + 1);
+            return;
+          }
+        }
+      }
     },
     [handleAddNode, topology.nodes],
   );
@@ -1803,6 +1832,67 @@ export default function App() {
     [engine, history],
   );
 
+  /** A repair is one undoable change, separate from manual slider gestures. */
+  const handleOperatorConfigChange = useCallback(
+    (nodeId: string, patch: Partial<NodeConfig>): boolean => {
+      if (challengeId || history.inGesture) return false;
+      const base = topoLiveRef.current;
+      const node = base.nodes.find((candidate) => candidate.id === nodeId);
+      if (!node) return false;
+      // The upstream autoscaler can change live instances without rewriting
+      // the authored topology. Undo must restore the count JEV actually saw.
+      const liveInstances = engine.snapshot().nodes[nodeId]?.instances;
+      const beforeConfig =
+        patch.instances !== undefined && liveInstances !== undefined
+          ? { ...node.config, instances: liveInstances }
+          : node.config;
+      if (
+        Object.entries(patch).every(
+          ([key, value]) => beforeConfig[key as keyof NodeConfig] === value,
+        )
+      )
+        return false;
+      const beforeTopology =
+        beforeConfig === node.config
+          ? base
+          : {
+              ...base,
+              nodes: base.nodes.map((candidate) =>
+                candidate.id === nodeId
+                  ? { ...candidate, config: beforeConfig }
+                  : candidate,
+              ),
+            };
+      const next = {
+        ...beforeTopology,
+        nodes: beforeTopology.nodes.map((candidate) =>
+          candidate.id === nodeId
+            ? { ...candidate, config: { ...candidate.config, ...patch } }
+            : candidate,
+        ),
+      };
+      const before = { ...snapRef.current, topology: beforeTopology };
+      history.commit(`JEV repair: ${node.label}`, before);
+      engine.updateNodeConfig(nodeId, patch);
+      topoLiveRef.current = next;
+      snapRef.current = { ...before, topology: next, presetId: null };
+      setTopology(next);
+      setPresetId(null);
+      setSnapshot(engine.snapshot());
+      return true;
+    },
+    [challengeId, engine, history],
+  );
+
+  const handleOperatorFailure = useCallback(
+    (nodeId: string, kind: 'crash' | 'slow' | null) => {
+      if (kind === null) engine.clearFailure(nodeId);
+      else engine.injectFailure(nodeId, kind, kind === 'slow' ? { factor: 5 } : {});
+      setSnapshot(engine.snapshot());
+    },
+    [engine],
+  );
+
   /**
    * Apply ONE patch to MANY nodes. Deliberately not a loop over
    * handleConfigChange: each call would close over the topology as it was at
@@ -1905,6 +1995,64 @@ export default function App() {
    * student, and add/delete/undo must not move it.
    */
   const [fitNonce, setFitNonce] = useState(0);
+  const viewInteractionRef = useRef(0);
+  useLayoutEffect(() => {
+    // A queued fit yields to canvas gestures, not unrelated repair or panel
+    // controls. Capture also sees wheel/pinch and window-level zoom shortcuts.
+    const rememberInteraction = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const onCanvas = target?.closest(
+        '.cv-surface, [data-chrome="zoom"], [data-chrome="minimap"]',
+      );
+      const cameraShortcut =
+        event instanceof KeyboardEvent &&
+        !event.altKey &&
+        !target?.closest('input, textarea, select, [contenteditable="true"]') &&
+        (((event.ctrlKey || event.metaKey) &&
+          [
+            'Equal',
+            'Minus',
+            'Digit0',
+            'NumpadAdd',
+            'NumpadSubtract',
+            'Numpad0',
+          ].includes(event.code)) ||
+          (event.shiftKey && ['Digit1', 'Digit2'].includes(event.code)));
+      if (!onCanvas && !cameraShortcut) return;
+      viewInteractionRef.current++;
+    };
+    const events = ['pointerdown', 'wheel', 'keydown'] as const;
+    for (const event of events)
+      window.addEventListener(event, rememberInteraction, {
+        capture: true,
+        passive: true,
+      });
+    return () => {
+      for (const event of events)
+        window.removeEventListener(event, rememberInteraction, true);
+    };
+  }, []);
+  const bootFitted = useRef(false);
+  useLayoutEffect(() => {
+    if (barBottom === null || bootFitted.current) return;
+    const interaction = viewInteractionRef.current;
+    const frame = requestAnimationFrame(() => {
+      bootFitted.current = true;
+      if (interaction === viewInteractionRef.current) setFitNonce((value) => value + 1);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [barBottom]);
+
+  // Only explicit workspace changes reframe. Telemetry and ordinary edits do
+  // not move the camera. Wait for the panel transition and measured dock size.
+  useEffect(() => {
+    if (phone && (layout.library || layout.metrics || inspectorVisible)) return;
+    const interaction = viewInteractionRef.current;
+    const timer = window.setTimeout(() => {
+      if (interaction === viewInteractionRef.current) setFitNonce((value) => value + 1);
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [layout.library, layout.metrics, inspectorVisible, compact, phone, barBottom]);
 
   /**
    * Replace the whole design, as one history entry.
@@ -2334,6 +2482,7 @@ export default function App() {
   }, [topology]);
 
   const handleReset = useCallback(() => {
+    setOperatorResetEpoch((value) => value + 1);
     engine.reset();
     // Synchronously, not via the derivation effect: Reset must never leave
     // the previous run's Dropped figure standing beside a zeroed clock.
@@ -2341,7 +2490,13 @@ export default function App() {
     setSnapshot(engine.snapshot());
   }, [engine, resetLostRate]);
 
-  const handleToggleRun = useCallback(() => setRunning((r) => !r), []);
+  const handleToggleRun = useCallback(() => {
+    // Freeze at the engine's current tick, not the last throttled UI snapshot.
+    // A design edit while paused must not appear to advance its clock.
+    runningRef.current = !runningRef.current;
+    setRunning(runningRef.current);
+    setSnapshot(engine.snapshot());
+  }, [engine]);
 
   /**
    * Advance one fixed tick with the loop stopped. Stepping while running
@@ -2359,6 +2514,11 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.defaultPrevented ||
+        document.querySelector('[aria-modal="true"], dialog[open]')
+      )
+        return;
       // Never steal keys from a field the user is typing into.
       const target = e.target as HTMLElement | null;
       if (target) {
@@ -2367,7 +2527,9 @@ export default function App() {
           tag === 'INPUT' ||
           tag === 'TEXTAREA' ||
           tag === 'SELECT' ||
-          target.isContentEditable
+          target.isContentEditable ||
+          target.closest('button, a, [role="menu"]') ||
+          (target instanceof HTMLElement && target.closest('[role="button"]'))
         ) {
           return;
         }
@@ -2418,7 +2580,7 @@ export default function App() {
 
       if (e.code === 'Space') {
         e.preventDefault();
-        setRunning((r) => !r);
+        handleToggleRun();
         return;
       }
 
@@ -2506,6 +2668,7 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [
+    handleToggleRun,
     handleStep,
     handleUndo,
     handleRedo,
@@ -2608,23 +2771,23 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-bar" ref={barRef}>
-        <div className="app-island app-island-brand">
-          {/* The wordmark is the one place the product speaks in its own
-            voice. Two words, sentence case, no abbreviation — a student
-            opening this should be able to say what it is out loud. */}
-          <div className="app-brand">
-            <h1 className="app-title">Breakscale</h1>
-            <p className="app-tagline">Build it, load it, watch it break</p>
-          </div>
+      <header className="app-bar" ref={barRef} aria-label="System controls">
+        <div className="app-island app-island-load">
+          <TrafficControl
+            rps={offeredRps}
+            onRpsChange={handleRpsChange}
+            running={running}
+            onToggleRun={handleToggleRun}
+            onStep={handleStep}
+            onReset={handleReset}
+            system={snapshot?.system ?? EMPTY_SYSTEM}
+            lost={lostRps}
+            empty={topology.nodes.length === 0}
+            noTrafficSource={offeredRps === 0 && findClients(topology).length === 0}
+          />
+        </div>
 
-          {/*
-            Says the work is safe.
-
-            role=status, so it is announced rather than only drawn: someone
-            who cannot see the dot has the same reason to worry about closing
-            the tab as someone who can.
-          */}
+        <div className="app-island app-island-menu">
           <p
             className={`app-saved is-${saveState}`}
             role="status"
@@ -2638,16 +2801,6 @@ export default function App() {
             {saveState === 'saved' ? 'Saved' : 'Saving'}
           </p>
 
-          {/*
-          Undo / redo. Beside the wordmark, at the editing end of the bar,
-          away from the run/pause cluster: these operate on the DIAGRAM, not
-          on the simulation. Disabled state is derived from the history
-          stacks on every render, so the buttons can never claim emptiness
-          while entries exist (the cached-boolean regression Excalidraw
-          shipped). Icon-only, because "curved arrow left" is one of the few
-          icons with a universally settled meaning, and the title carries the
-          shortcut for anyone hovering to check.
-        */}
           <div className="app-history">
             <button
               type="button"
@@ -2696,94 +2849,21 @@ export default function App() {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div className="app-island app-island-load">
-          <TrafficControl
-            rps={offeredRps}
-            onRpsChange={handleRpsChange}
-            running={running}
-            onToggleRun={handleToggleRun}
-            onStep={handleStep}
-            onReset={handleReset}
-            system={snapshot?.system ?? EMPTY_SYSTEM}
-            lost={lostRps}
-            empty={topology.nodes.length === 0}
-            noTrafficSource={offeredRps === 0 && findClients(topology).length === 0}
-          />
-        </div>
-
-        <div className="app-island app-island-menu">
-          {/*
-          Everything that is reference or setup, behind one button.
-
-          Examples, Shortcuts, Settings and Glossary were four buttons
-          competing with the load control and the live readouts. They are all
-          reached BETWEEN actions rather than during one, so folding them
-          here leaves the bar carrying only what changes while the simulation
-          runs, which is the thing a reader is actually watching.
-        */}
-          {/*
-            The one outward link in the bar.
-
-            It sits here rather than in the menu because it is the only thing
-            on this surface addressed to someone deciding whether to trust the
-            project, and a reader who has to open a menu to find the source
-            has usually stopped looking. Chrome, so the canvas ignores it.
-          */}
-          <a
-            className={`btn btn-icon app-source-link${stars !== null ? ' has-stars' : ''}`}
-            href="https://github.com/xevrion/breakscale"
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={
-              starCount !== null
-                ? `Source on GitHub, ${starCount} stars`
-                : 'Source on GitHub'
-            }
-            title="Source on GitHub"
-            data-chrome=""
+          <button
+            type="button"
+            className="btn btn-sm app-about-btn"
+            aria-haspopup="dialog"
+            onClick={() => setAboutOpen(true)}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M12 1.5a10.5 10.5 0 0 0-3.32 20.47c.53.1.72-.23.72-.5v-1.8c-2.92.63-3.54-1.41-3.54-1.41-.48-1.21-1.17-1.54-1.17-1.54-.95-.65.07-.64.07-.64 1.06.08 1.61 1.09 1.61 1.09.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.67-1.4-2.33-.27-4.78-1.17-4.78-5.19 0-1.15.41-2.09 1.08-2.82-.11-.27-.47-1.34.1-2.79 0 0 .88-.28 2.88 1.07a9.9 9.9 0 0 1 5.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.45.21 2.52.1 2.79.67.73 1.08 1.67 1.08 2.82 0 4.03-2.45 4.92-4.79 5.18.38.33.71.97.71 1.96v2.9c0 .28.19.61.72.5A10.5 10.5 0 0 0 12 1.5z" />
-            </svg>
-            {/* Absent until the fetch resolves, not rendered empty and filled
-                later: a reserved-but-blank slot would shift nothing today but
-                invites a layout-shift bug the day the icon gets a neighbour
-                that shows before this does. aria-hidden because the accessible
-                name above already carries the count. A bare number next to
-                the mark reads as nothing in particular, so a small star
-                glyph says what it is without a word of copy. */}
-            {stars !== null && (
-              <span className="app-source-stars" aria-hidden="true">
-                <span className="app-source-star-wrap">
-                  <svg
-                    className="app-source-star-glyph"
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M12 2.5l2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7-5.4-4.7 7.1-.7z" />
-                  </svg>
-                </span>
-                {formatStars(stars)}
-              </span>
-            )}
-          </a>
-
+            About
+          </button>
           {/* Labelled, and in the bar rather than three levels down inside
               Settings. Sending a design to someone is a thing people want
               to do often, and a feature nobody can find has not shipped. */}
           <button
             type="button"
             className="btn app-share-btn"
+            aria-label="Share"
             onClick={handleOpenShare}
             title="Get a link to this design"
           >
@@ -2800,7 +2880,7 @@ export default function App() {
             >
               <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
             </svg>
-            Share
+            <span>Share</span>
           </button>
 
           <div className="app-menu-wrap">
@@ -2855,9 +2935,9 @@ export default function App() {
            React at the end, so the canvas does not re-render per frame. */
         style={
           {
-            '--rail-w': `${layout.railW}px`,
-            '--ins-w': `${layout.insW}px`,
-            '--strip-h': `${layout.stripH}px`,
+            '--rail-requested': `${layout.railW}px`,
+            '--ins-requested': `${layout.insW}px`,
+            '--strip-requested': `${layout.stripH}px`,
             /* The bar's own height plus the gap it floats in. Falls back to
                the stylesheet's constant until the first measurement lands. */
             ...(barBottom === null
@@ -2878,7 +2958,7 @@ export default function App() {
           />
           <PanelResizer
             edge="left"
-            property="--rail-w"
+            property="--rail-requested"
             size={layout.railW}
             min={PANEL_LIMITS.railW.min}
             max={PANEL_LIMITS.railW.max}
@@ -2944,6 +3024,7 @@ export default function App() {
               exportSvgRef={exportSvgRef}
               onToolChange={setArmedTool}
               fitSignal={fitNonce}
+              viewInteractionRef={viewInteractionRef}
               visibleRef={stageSafeRef}
             />
             {/*
@@ -2952,6 +3033,24 @@ export default function App() {
               never see it. Its rect is the canvas minus every open panel.
             */}
             <div ref={stageSafeRef} className="stage-safe" aria-hidden="true" />
+            {phone && (
+              <p className="stage-touch-hint">
+                Pinch to zoom
+                <br />
+                Tap a component
+              </p>
+            )}
+            <Operator
+              topology={topology}
+              snapshot={snapshot}
+              selectedNodeId={selectedNode?.id ?? null}
+              running={running}
+              challengeActive={Boolean(challenge)}
+              resetEpoch={operatorResetEpoch}
+              onFailure={handleOperatorFailure}
+              onConfigChange={handleOperatorConfigChange}
+              onTrafficChange={handleRpsChange}
+            />
             {challenge && challengeResult ? (
               <ChallengePanel
                 challenge={challenge}
@@ -3016,7 +3115,7 @@ export default function App() {
             ) : null}
             <PanelResizer
               edge="bottom"
-              property="--strip-h"
+              property="--strip-requested"
               size={layout.stripH}
               min={PANEL_LIMITS.stripH.min}
               max={PANEL_LIMITS.stripH.max}
@@ -3048,7 +3147,7 @@ export default function App() {
           />
           <PanelResizer
             edge="right"
-            property="--ins-w"
+            property="--ins-requested"
             size={layout.insW}
             min={PANEL_LIMITS.insW.min}
             max={PANEL_LIMITS.insW.max}
@@ -3138,6 +3237,7 @@ export default function App() {
       <TooltipLayer />
       <Glossary open={glossaryOpen} onClose={closeGlossary} focusId={glossaryFocusId} />
       <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <Share
         open={shareOpen}
         state={shareState}

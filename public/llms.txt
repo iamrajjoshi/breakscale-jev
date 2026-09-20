@@ -1,43 +1,7 @@
-# Breakscale
+# Switchyard
 
-> A discrete-event system design simulator for learning how distributed systems
-> behave under load. Build a topology, push traffic through it, and watch real
-> queueing behaviour: latency percentiles, queue backlogs, and failure cascades.
+A fork of Breakscale by xevrion and contributors: https://github.com/xevrion/breakscale. The integration baseline is revision 3ce685bddd8cfba85bd6c2059df935072383b913. Original Git history, authorship and the MIT license are preserved.
 
-The simulation runs in the browser. No account, no telemetry. A design leaves the
-page only when you share a link, and then only encrypted: the key travels in the
-URL fragment, which browsers never send to a server.
+Breakscale supplies the editable canvas, component catalog, examples, challenges and discrete-event simulation. Switchyard adds an automatic JEV watcher, incident shortcuts and measured action history. JEV chooses a bounded action from live simulated state; TypeScript executes it and the unchanged Breakscale engine measures the outcome. Recovery is not guaranteed, and no model-superiority claim is made.
 
-## What it is for
-
-Most system design material is static diagrams and rules of thumb. Breakscale
-runs the experiment instead. Load an example, drag the traffic up, and watch a
-system fail in the specific way that example is about.
-
-## What makes the numbers trustworthy
-
-- Requests are real objects moving through the topology, occupying finite
-  server slots and waiting in real FIFO queues.
-- Latency percentiles come from measured request latencies, never from a mean
-  multiplied by a constant.
-- Abandoned work still burns capacity: when a caller times out, the downstream
-  keeps working on a request nobody is waiting for. That is why retry storms
-  are visible here rather than theoretical.
-- The simulation is deterministic. The same seed and topology replay exactly.
-
-## What is in it
-
-- 33 components: load balancers, caches, databases, queues, workers, CDNs,
-  rate limiters, circuit breakers, read replicas, sharded stores, autoscalers,
-  stream brokers, WebSocket gateways, serverless functions, bulkheads and more.
-- 23 worked examples, each isolating one failure mode, including reconstructions
-  of Netflix, Spotify, Discord, Uber, Twitter/X, Stripe and WhatsApp.
-- Chaos controls: crash a component, slow it, force errors, or cut a link.
-- A 100-term glossary explaining every metric and what it means in practice.
-  Readable as plain HTML at https://breakscale.vercel.app/glossary
-
-## Links
-
-- App: https://breakscale.vercel.app/
-- Source: https://github.com/xevrion/breakscale
-- Licence: MIT
+The local Node server keeps TypeSafe credentials out of the browser. Manual controls work without a key. See README.md, PROJECT.md and UPSTREAM.md for setup, pending limitations and attribution. There is no hosted Switchyard deployment implied by this source.
