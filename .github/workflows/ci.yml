@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, raj--breakscale-jev--recovery]
+    branches: [main]
   pull_request:
 
 # Nothing here writes to the repository, so start from zero and grant per job.

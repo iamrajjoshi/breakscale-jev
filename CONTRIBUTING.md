@@ -19,12 +19,12 @@ npm run dev
 
 The app runs at http://127.0.0.1:4176. The local server serves both the app and model API. Manual simulation works without a model credential; use `JEV_OFFLINE=1` for checks that must not load one. See README.md for opt-in JEV setup.
 
-Use a feature branch based on this fork's default branch. The default is `raj--breakscale-jev--recovery`; CI also supports `main`. When contributing from a personal fork, keep a separate remote for breakscale-jev:
+Use a feature branch based on this fork's default branch. The default is `main`. When contributing from a personal fork, keep a separate remote for breakscale-jev:
 
 ```sh
 git remote add breakscale-jev https://github.com/iamrajjoshi/breakscale-jev.git
 git fetch breakscale-jev
-git switch -c raj--breakscale-jev--your-change breakscale-jev/raj--breakscale-jev--recovery
+git switch -c raj--breakscale-jev--your-change breakscale-jev/main
 ```
 
 Useful commands:
