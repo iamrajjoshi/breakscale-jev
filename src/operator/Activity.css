@@ -1,4 +1,5 @@
 .operator-activity {
+  min-height: 0;
   margin-top: var(--sp-2);
   border-top: var(--bw) solid var(--border);
   color: var(--text);
@@ -20,8 +21,9 @@
 }
 
 .activity-toggle {
+  flex: none;
   justify-content: space-between;
-  min-height: 32px;
+  min-height: 40px;
   font-weight: var(--fw-med);
 }
 
@@ -41,6 +43,7 @@
 
 .activity-chevron {
   flex: none;
+  color: var(--text-faint);
   font-size: var(--fs-num);
   line-height: 1;
 }
@@ -59,7 +62,7 @@
 }
 
 .activity-scroll {
-  max-height: min(160px, 22dvh);
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -71,21 +74,39 @@
   padding: 0;
 }
 
-.activity-entry + .activity-entry {
-  border-top: var(--bw) solid var(--border);
+.activity-entry {
+  position: relative;
+}
+
+.activity-entry::before {
+  position: absolute;
+  content: '';
+  top: 21px;
+  bottom: -21px;
+  left: 3px;
+  width: 1px;
+  background: var(--border);
+}
+
+.activity-entry:last-child::before {
+  content: none;
 }
 
 .activity-entry-summary {
+  position: relative;
   min-height: 44px;
-  padding: var(--sp-1) var(--sp-1) var(--sp-1) 0;
+  padding: var(--sp-3) var(--sp-1) var(--sp-3) 0;
   align-items: flex-start;
 }
 
-.activity-time {
+.activity-timeline-mark {
   flex: none;
-  padding-top: 1px;
-  font-size: var(--fs-label);
-  line-height: 1.5;
+  width: 7px;
+  height: 7px;
+  margin-top: var(--sp-1);
+  border-radius: var(--r-pill);
+  background: var(--text-faint);
+  outline: var(--sp-1) solid var(--surface);
 }
 
 .activity-entry-label {
@@ -96,7 +117,8 @@
 }
 
 .activity-action,
-.activity-status {
+.activity-status,
+.activity-time {
   display: block;
 }
 
@@ -105,12 +127,22 @@
 }
 
 .activity-status {
+  margin-top: var(--sp-1);
   color: var(--text-dim);
+  font-size: var(--fs-label);
+}
+
+.activity-time {
+  margin-top: var(--sp-1);
   font-size: var(--fs-label);
 }
 
 .activity-entry[data-status='healthy'] .activity-status {
   color: var(--ok);
+}
+
+.activity-entry[data-status='healthy'] .activity-timeline-mark {
+  background: var(--ok);
 }
 
 .activity-entry[data-status='diagnosing'] .activity-status,
@@ -119,13 +151,24 @@
   color: var(--warn);
 }
 
+.activity-entry[data-status='diagnosing'] .activity-timeline-mark,
+.activity-entry[data-status='measuring'] .activity-timeline-mark,
+.activity-entry[data-status='unresolved'] .activity-timeline-mark {
+  background: var(--warn);
+}
+
 .activity-entry[data-status='failed'] .activity-status,
 .activity-entry[data-status='blocked'] .activity-status {
   color: var(--danger);
 }
 
+.activity-entry[data-status='failed'] .activity-timeline-mark,
+.activity-entry[data-status='blocked'] .activity-timeline-mark {
+  background: var(--danger);
+}
+
 .activity-evidence-body {
-  padding: 0 var(--sp-1) var(--sp-2);
+  padding: 0 var(--sp-1) var(--sp-3) var(--sp-4);
   color: var(--text-dim);
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -139,19 +182,24 @@
   margin: 0;
 }
 
+.activity-provenance {
+  margin: 0 0 var(--sp-2);
+  color: var(--text);
+}
+
 .activity-stages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-3);
+  display: grid;
+  gap: var(--sp-1);
   list-style: none;
   padding: 0;
-  margin: var(--sp-2) 0;
+  margin: var(--sp-3) 0;
   font-size: var(--fs-label);
 }
 
 .activity-stages li {
   display: flex;
-  gap: var(--sp-1);
+  justify-content: space-between;
+  gap: var(--sp-2);
 }
 
 .activity-stages time {
@@ -165,8 +213,8 @@
 
 .activity-metrics {
   display: grid;
-  gap: 2px;
-  margin: var(--sp-1) 0;
+  gap: var(--sp-1);
+  margin: var(--sp-2) 0;
 }
 
 .activity-metrics > div {
@@ -182,24 +230,35 @@
 }
 
 .activity-empty {
-  padding: var(--sp-1) 0 var(--sp-2);
-  line-height: 1.45;
+  padding: var(--sp-1) 0 var(--sp-3);
+  max-width: 38ch;
+  line-height: 1.5;
   color: var(--text-dim);
 }
 
 .activity-retention {
-  padding: var(--sp-2) 0;
+  padding: var(--sp-3) 0;
   font-size: var(--fs-label);
   line-height: 1.4;
 }
 
-@media (max-width: 720px) {
-  .activity-scroll {
-    max-height: 96px;
+@media (min-width: 1100px) {
+  .operator-activity[open] {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
 
-  .activity-entry-summary {
-    gap: var(--sp-1);
+  .activity-scroll {
+    flex: 1;
+  }
+}
+
+@media (max-width: 1099px) {
+  .activity-scroll {
+    max-height: none;
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 }
 
@@ -207,11 +266,4 @@
   .activity-toggle {
     min-height: 44px;
   }
-}
-
-.activity-provenance {
-  margin: 0 0 var(--sp-2);
-  padding-left: var(--sp-2);
-  border-left: 2px solid var(--accent);
-  color: var(--text);
 }

@@ -346,6 +346,7 @@ test.describe('the user’s 897×1204 dark window', () => {
       'operator-stop',
     ])
       await expectReachable(page.getByTestId(id));
+    await openBuild(page, 897);
     await page.getByRole('button', { name: 'Hide components', exact: true }).click();
     await expect(page.locator('.app-slot-left:not(.is-closing)')).toHaveCount(0);
     await page.getByRole('button', { name: 'Show components', exact: true }).click();

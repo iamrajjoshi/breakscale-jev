@@ -1,0 +1,301 @@
+/* Fork shell: a live canvas beside its repair history. The editor and simulator
+   remain upstream; this layer owns the playground's layout and quieter chrome. */
+.app {
+  --bg: light-dark(#f6f7f9, #171a20);
+  --surface: light-dark(#ffffff, #20242c);
+  --border: light-dark(#dce1e8, #343b47);
+  --text: light-dark(#202631, #edf0f5);
+  --repair-width: 324px;
+  --repair-clear: calc(var(--repair-width) + var(--sp-4));
+}
+
+.app .btn {
+  box-shadow: none;
+}
+
+.app .app-bar {
+  inset: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0 var(--sp-5);
+  border: 0;
+  border-bottom: var(--bw) solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.playground-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  min-width: 0;
+  min-height: 52px;
+  grid-area: 1 / 1;
+}
+
+.playground-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  white-space: nowrap;
+  font-size: var(--fs-num);
+  font-weight: var(--fw-num);
+  letter-spacing: -0.025em;
+}
+
+.playground-brand svg {
+  width: 28px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  fill: var(--surface);
+}
+
+.playground-tagline {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.app .app-island-menu {
+  grid-area: 1 / 2;
+  padding: 0;
+  border: 0;
+  min-height: 52px;
+}
+
+.app .app-island-load {
+  grid-area: 2 / 1 / auto / -1;
+  padding: var(--sp-2) 0 var(--sp-3);
+  min-height: 0;
+  border-top: var(--bw) solid var(--border);
+}
+
+.app .traffic .label {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.app .traffic .num {
+  font-family: var(--sans);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.app .traffic .num-hero {
+  font-size: var(--fs-lg);
+}
+
+.app .traffic-load {
+  max-width: none;
+}
+
+.app .traffic-load-readout .num-lg {
+  min-width: 44px;
+}
+
+.app .traffic-headline > .traffic-metric:first-child {
+  width: 84px;
+}
+
+.app .traffic-headline,
+.app .traffic-metric-group {
+  gap: var(--sp-5);
+}
+
+.app .cv-hint-idle {
+  display: none;
+}
+
+.app .cv-grid {
+  opacity: 0.5;
+}
+
+.app .stage-toggle-library,
+.app .stage-toggle-metrics {
+  width: auto;
+  padding-inline: var(--sp-3);
+  gap: var(--sp-2);
+}
+
+.app .cv-ledger {
+  left: 112px;
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.app .app-body.has-library .cv-ledger {
+  left: calc(var(--rail-w) + 124px);
+}
+
+@media (min-width: 1100px) {
+  /* Reserve the rail without resizing the pointer surface. Opening the
+     Inspector or library therefore never changes drag coordinates. */
+  .app .app-body .operator-dock {
+    top: calc(var(--bar-clear) - 12px);
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: var(--repair-width);
+    max-width: none;
+    margin: 0;
+    padding: var(--sp-5);
+    border: 0;
+    border-left: var(--bw) solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .app .app-body .stage-canvas .stage-safe {
+    top: calc(var(--bar-clear) + 40px);
+    right: var(--repair-clear);
+    bottom: 64px;
+  }
+
+  .app .app-body.has-inspector .stage-canvas .stage-safe {
+    right: calc(var(--repair-clear) + var(--ins-w) + 24px);
+  }
+
+  .app .app-body.has-metrics .stage-canvas .stage-safe {
+    bottom: calc(var(--strip-h) + 64px);
+  }
+
+  .app .app-slot-right {
+    right: var(--repair-clear);
+  }
+
+  .app .app-slot-bottom {
+    right: var(--repair-clear);
+  }
+
+  .app .app-body.has-inspector .app-slot-bottom {
+    right: calc(var(--repair-clear) + var(--ins-w) + 12px);
+  }
+
+  .app .app-body .stage-toggle-inspector,
+  .app .app-body .cv-zoom,
+  .app .app-body .mm {
+    right: var(--repair-clear);
+  }
+
+  .app .app-body.has-inspector .stage-toggle-inspector,
+  .app .app-body.has-inspector .cv-zoom,
+  .app .app-body.has-inspector .mm {
+    right: calc(var(--repair-clear) + var(--ins-w) + 24px);
+  }
+
+  .app .app-body.has-metrics .operator-dock {
+    bottom: 0;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1099px) {
+  .app .app-body .operator-dock {
+    max-height: calc(100dvh - var(--bar-clear) - 100px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .app .playground-tagline {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .app-bar {
+    padding: 0 var(--sp-2);
+  }
+
+  .playground-identity,
+  .app .app-island-menu {
+    min-height: 52px;
+  }
+
+  .playground-brand {
+    font-size: var(--fs-base);
+  }
+
+  .playground-brand svg,
+  .playground-tagline {
+    display: none;
+  }
+
+  .app .app-island-menu {
+    gap: 0;
+  }
+
+  .app .app-island-load {
+    padding: var(--sp-1) 0 var(--sp-2);
+  }
+
+  .app .app-history {
+    margin: 0;
+    gap: 0;
+  }
+
+  .app .app-history .btn,
+  .app .app-island-menu .btn {
+    border-color: transparent;
+  }
+
+  .app .traffic {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-1) var(--sp-3);
+  }
+
+  .app .traffic-load-head {
+    grid-area: 1 / 1;
+  }
+
+  .app .traffic-actions {
+    grid-area: 1 / 2;
+    justify-content: flex-end;
+  }
+
+  .app .traffic-load-track {
+    grid-area: 2 / 1;
+  }
+
+  .app .traffic-headline {
+    grid-area: 2 / 2;
+    margin: 0;
+    align-self: start;
+  }
+
+  .app .traffic-headline > .traffic-metric:first-child {
+    width: auto;
+    gap: var(--sp-1);
+  }
+
+  .app .traffic-metric .num-hero {
+    font-size: var(--fs-num);
+  }
+
+  .app .traffic-headline:has(.traffic-empty) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .app .traffic-empty {
+    font-size: var(--fs-sm);
+  }
+
+  .app .app-body .operator-dock {
+    max-height: calc(100dvh - var(--bar-clear) - var(--tabbar-h) - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* An expanded drawer overlays the current view; closing it restores the
+     normal canvas area. Fitting into a tiny gap would make nodes illegible. */
+  .app .app-body:has(.operator-dock[data-explore-open='true']) .stage-safe {
+    bottom: 240px;
+  }
+}

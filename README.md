@@ -19,7 +19,9 @@ For Live JEV, set `TYPESAFE_API_KEY` in the server environment or `~/.config/jev
 
 ## Play
 
-Start with **Crash** or **Slowdown**, or open **Recorded runs** to load a captured incident. The six setups cover a database crash, injected slowdown, a slow API configuration, database errors, 200 requests/second, and a combined crash/load incident. Loading a setup is undoable. You can move and rename components, apply damage again, change settings, pause, and inspect the results.
+Start with **Try a full outage** to load a working recorded demo and watch its three repairs. **Crash**, **Slowdown**, and the load controls change your current system. Open **Recorded runs** for six captured setups: a database crash, injected slowdown, a slow API configuration, database errors, 200 requests/second, and a combined crash/load incident. Loading a setup is undoable. You can move and rename components, apply damage again, change settings, pause, and inspect the results.
+
+The repair/history rail sits beside the canvas on wide screens. On smaller screens, open **Runs & activity** to explore the evidence and other setups; Escape closes it and returns focus. **Components** opens the editor catalog. The current light/dark preference and saved desktop layout are preserved.
 
 Recordings are a finite library, not a local model. The current topology, component settings, load, faults and legal action must match a capture. Different settings can show “No recorded repair matches”; the canvas remains editable. Activity labels every reused choice as **Recorded JEV**, with its capture date, and shows measurements from your current simulation. It never substitutes historical metrics for a current result. An 800ms presentation step lets you interrupt the replay; it is not inference latency. See [recording provenance](docs/recordings.md).
 
@@ -55,7 +57,7 @@ npm run test:recordings
 ## Source map
 
 - `src/sim/`: unchanged upstream simulation and tests.
-- `src/App.tsx`, `src/components/`: manual editor, canvas and app integration.
+- `src/App.tsx`, `src/components/`: manual editor, canvas and app integration; `src/playground.css` owns the fork's playground layout.
 - `src/operator/`: observations, finite repairs, watcher, Activity and incident controls.
 - `src/designer/`: typed-edit internals and Inspector metadata; no model design-command UI.
 - `server/`: local HTTP boundary, credential loading and bounded inference.

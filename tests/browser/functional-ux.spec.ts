@@ -16,6 +16,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('operator-stop').click();
   await expect(page.locator('.cv-node')).toHaveCount(3);
+  const showComponents = page.getByRole('button', {
+    name: 'Show components',
+    exact: true,
+  });
+  if (await showComponents.isVisible()) await showComponents.click();
 });
 test.afterEach(async ({ page }) => {
   expect(pageErrors.get(page)).toEqual([]);

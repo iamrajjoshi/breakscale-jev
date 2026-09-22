@@ -88,7 +88,10 @@ import { downloadBlob, svgToPng } from './imageExport';
 import { Operator } from './operator/Operator';
 import type { RecordedScenario } from './operator/recordings';
 import { About } from './operator/About';
+import { layoutDemo } from './demoLayout';
+import { findComponentPlacement } from './componentPlacement';
 import './App.css';
+import './playground.css';
 
 /* ------------------------------------------------------------------ *
  * Persistence
@@ -162,13 +165,6 @@ const clampPanel = (key: PanelKey, v: unknown): number => {
 };
 
 /**
- * First run: the rail is open because it is the app's verbs — components
- * to add and examples to load — and a canvas with no visible way to act
- * on it is a dead end. The charts start closed: the top bar already
- * carries p99, goodput, errors and dropped, so the strip is depth to be
- * opened when a headline number needs explaining, not a fixture.
- */
-/**
  * Is the shell narrow enough that panels have to be sheets?
  *
  * Matches the 720px breakpoint in App.css, and is stated here as well
@@ -212,7 +208,7 @@ function isPhoneServer(): boolean {
 }
 
 const DEFAULT_LAYOUT: LayoutPrefs = {
-  library: true,
+  library: false,
   metrics: false,
   railW: PANEL_LIMITS.railW.base,
   insW: PANEL_LIMITS.insW.base,
@@ -220,12 +216,8 @@ const DEFAULT_LAYOUT: LayoutPrefs = {
 };
 
 function loadLayout(): LayoutPrefs {
-  /* The components rail opens on a desktop because a blank canvas with no
-     visible way to act on it is a dead end. On a phone the same default is
-     the opposite of helpful: the rail is a sheet, so it opens ON TOP of the
-     canvas and the first thing a reader sees is a list of components with a
-     sliver of diagram behind it. They arrive from a link to LOOK at
-     something, so the canvas gets the screen and the rail is a tap away. */
+  // Visitors start with a working system and a playable incident. The component
+  // catalog stays one click away; preserve an existing desktop layout preference.
   const base: LayoutPrefs = isPhone()
     ? { ...DEFAULT_LAYOUT, library: false }
     : DEFAULT_LAYOUT;
@@ -520,7 +512,7 @@ interface Session {
 
 function loadSession(): Session {
   const fallback: Session = {
-    topology: PRESETS[0]!.topology,
+    topology: layoutDemo(PRESETS[0]!.topology, isPhone()),
     rps: clientRps(PRESETS[0]!.topology),
     presetId: PRESETS[0]!.id,
   };
@@ -1598,31 +1590,13 @@ export default function App() {
         handleAddNode(kind, maxX + 220, 200);
         return;
       }
-      // Search whole node-sized slots around the view center. Sub-node offsets
-      // still overlap, and the old fallback silently buried the existing API.
-      const cx = Math.round((centre.x - NODE_W / 2) / GRID) * GRID;
-      const cy = Math.round((centre.y - NODE_H / 2) / GRID) * GRID;
-      const occupied = (px: number, py: number) =>
-        topoLiveRef.current.nodes.some(
-          (n) =>
-            Math.abs(n.x - px) < NODE_W + GRID * 2 &&
-            Math.abs(n.y - py) < NODE_H + GRID * 2,
-        );
-      const stepX = Math.ceil((NODE_W + GRID * 4) / GRID) * GRID;
-      const stepY = Math.ceil((NODE_H + GRID * 4) / GRID) * GRID;
-      for (let radius = 0; radius <= topoLiveRef.current.nodes.length + 1; radius++) {
-        for (let y = -radius; y <= radius; y++) {
-          for (let x = -radius; x <= radius; x++) {
-            if (Math.max(Math.abs(x), Math.abs(y)) !== radius) continue;
-            const px = cx + x * stepX;
-            const py = cy + y * stepY;
-            if (occupied(px, py)) continue;
-            handleAddNode(kind, px, py);
-            setFitNonce((value) => value + 1);
-            return;
-          }
-        }
-      }
+      const point = findComponentPlacement(topoLiveRef.current, centre, {
+        width: NODE_W,
+        height: NODE_H,
+        grid: GRID,
+      });
+      handleAddNode(kind, point.x, point.y);
+      setFitNonce((value) => value + 1);
     },
     [handleAddNode, topology.nodes],
   );
@@ -2197,7 +2171,7 @@ export default function App() {
 
   const handleLoadRecording = useCallback(
     (scenario: RecordedScenario) => {
-      replaceDesign(structuredClone(scenario.topology), null, 'recorded run');
+      replaceDesign(layoutDemo(scenario.topology, isPhone()), null, 'recorded run');
       setChallengeId(null);
       for (const failure of scenario.failures ?? []) {
         engine.injectFailure(
@@ -2814,6 +2788,19 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-bar" ref={barRef} aria-label="System controls">
+        <div className="playground-identity">
+          <span className="playground-brand" data-testid="playground-brand">
+            <svg viewBox="0 0 28 22" aria-hidden="true">
+              <path d="M6 11h16M14 5v12" />
+              <rect x="1" y="7" width="8" height="8" rx="2" />
+              <rect x="10" y="1" width="8" height="8" rx="2" />
+              <rect x="19" y="7" width="8" height="8" rx="2" />
+              <rect x="10" y="13" width="8" height="8" rx="2" />
+            </svg>
+            breakscale-jev
+          </span>
+          <span className="playground-tagline">A system you can break.</span>
+        </div>
         <div className="app-island app-island-load">
           <TrafficControl
             rps={offeredRps}
@@ -3112,6 +3099,7 @@ export default function App() {
               onClick={toggleLibrary}
             >
               <PanelGlyph edge="left" />
+              <span>Components</span>
             </button>
             {/*
               Rendered only while something is selected, because that is the
@@ -3143,6 +3131,7 @@ export default function App() {
               onClick={toggleMetrics}
             >
               <PanelGlyph edge="bottom" />
+              <span>Charts</span>
             </button>
           </div>
           <PanelSlot

@@ -62,6 +62,7 @@ async function crash(page: Page) {
 }
 
 async function openHistory(page: Page) {
+  await openExplore(page);
   if (
     !(await page
       .getByTestId('operator-activity')
@@ -70,7 +71,17 @@ async function openHistory(page: Page) {
     await page.getByTestId('operator-activity-toggle').click();
 }
 
+async function openExplore(page: Page) {
+  const toggle = page.getByTestId('operator-explore-toggle');
+  if (
+    (await toggle.isVisible()) &&
+    (await toggle.getAttribute('aria-expanded')) !== 'true'
+  )
+    await toggle.click();
+}
+
 async function loadRecording(page: Page, id: string) {
+  await openExplore(page);
   const gallery = page.getByTestId('operator-recordings');
   if (!(await gallery.evaluate((element) => element.hasAttribute('open'))))
     await gallery.locator('summary').click();
@@ -312,8 +323,10 @@ test('the wreck recording applies all three saved choices and measures each chan
   await open(page);
   await loadRecording(page, 'wreck-it');
   await expect(page.locator('.cv-node.is-faulted')).toHaveCount(2);
-  await expect(activity(page, 'healthy')).toHaveCount(1, { timeout: 20_000 });
-  await expect(activity(page)).toHaveCount(3);
+  await expect(activity(page)).toHaveCount(3, { timeout: 20_000 });
+  await expect(activity(page).first()).toHaveAttribute('data-status', 'healthy', {
+    timeout: 10_000,
+  });
   const rows = await activity(page).evaluateAll((entries) =>
     entries.map((entry) => ({
       source: entry.getAttribute('data-source'),
@@ -465,9 +478,12 @@ test('recorded controls and expanded evidence remain reachable at 320px', async 
     page.getByRole('button', { name: 'Pause', exact: true }),
   ])
     await expectReachable(control);
-  await expectGraphUnobscured(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   await page.screenshot({ path: info.outputPath('recorded-phone-evidence.png') });
+  const explore = page.getByTestId('operator-explore-toggle');
+  if (await explore.isVisible()) await explore.click();
+  await expectGraphUnobscured(page);
+  await page.screenshot({ path: info.outputPath('recorded-phone-canvas.png') });
 });
 
 for (const disclosure of ['Recorded runs', 'Activity'] as const) {
@@ -486,9 +502,21 @@ for (const disclosure of ['Recorded runs', 'Activity'] as const) {
       await control.dispatchEvent('pointerup', { button: 0, pointerType: 'mouse' });
       await control.dispatchEvent('click');
     };
+    const explore = page.getByTestId('operator-explore-toggle');
+    if (
+      (await explore.isVisible()) &&
+      (await explore.getAttribute('aria-expanded')) !== 'true'
+    ) {
+      await activate(explore);
+      await page.clock.runFor(500);
+    }
     const panel = page.getByTestId(
       disclosure === 'Recorded runs' ? 'operator-recordings' : 'operator-activity',
     );
+    if (await panel.evaluate((element) => element.hasAttribute('open'))) {
+      await activate(panel.locator('summary').first());
+      await page.clock.runFor(500);
+    }
     await activate(panel.locator('summary').first());
     await expect(panel).toHaveAttribute('open', '');
     await page.clock.runFor(32);
@@ -505,6 +533,10 @@ for (const disclosure of ['Recorded runs', 'Activity'] as const) {
       page.getByRole('button', { name: 'Fit the diagram on screen', exact: true }),
     );
     await expect.poll(width).toBeLessThan(zoomed);
+    if (await explore.isVisible()) {
+      await activate(explore);
+      await page.clock.runFor(500);
+    }
     await expectGraphUnobscured(page);
   });
 }

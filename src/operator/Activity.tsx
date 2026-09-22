@@ -90,9 +90,7 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
     >
       <details className="activity-evidence">
         <summary className="activity-entry-summary">
-          <span className="activity-time">
-            <Timestamp value={entry.startedAt} />
-          </span>
+          <span className="activity-timeline-mark" aria-hidden="true" />
           <span className="activity-entry-label">
             <span className="activity-action">{entry.action ?? entry.incident}</span>
             <span className="activity-status">
@@ -100,6 +98,9 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
               {entry.recording && entry.status === 'diagnosing'
                 ? 'Replaying'
                 : statusLabels[entry.status]}
+            </span>
+            <span className="activity-time">
+              <Timestamp value={entry.startedAt} />
             </span>
           </span>
           <span className="activity-chevron" aria-hidden="true">
@@ -165,9 +166,7 @@ export function Activity({
   entries: ActivityEntry[];
   source: 'recorded' | 'live';
 }) {
-  const [open, setOpen] = useState(
-    () => window.matchMedia('(min-width: 721px)').matches,
-  );
+  const [open, setOpen] = useState(true);
 
   return (
     <details
@@ -199,7 +198,7 @@ export function Activity({
         {entries.length === 0 ? (
           <p className="activity-empty">
             {source === 'recorded'
-              ? 'Try Crash or Slowdown. Saved choices and your run’s measurements appear here.'
+              ? 'Start an outage to see what was chosen, what changed, and whether it worked.'
               : 'Change traffic or edit a component. JEV’s decisions will appear here.'}
           </p>
         ) : (

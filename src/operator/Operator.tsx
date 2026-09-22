@@ -23,6 +23,7 @@ import {
 import { ACTIVITY_LIMIT, type ActivityEntry } from './activity-record';
 import { madeRecoveryProgress, MAX_STALLED_WAITS } from './wait-policy';
 import './Operator.css';
+import './RepairPanel.css';
 
 interface OperatorProps {
   topology: Topology;
@@ -55,6 +56,7 @@ export function Operator(props: OperatorProps) {
     ? decisionFingerprint(props.topology, props.snapshot)
     : '';
   const [source, setSource] = useState<'recorded' | 'live'>('recorded');
+  const [exploreOpen, setExploreOpen] = useState(false);
   const [armed, setArmed] = useState(true);
   const [pending, setPending] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
@@ -802,6 +804,28 @@ export function Operator(props: OperatorProps) {
     } else if (kind === 'traffic') props.onTrafficChange(Math.min(10000, traffic * 2));
     else if (target) props.onFailure(target.id, kind);
   };
+  const loadScenario = (scenario: RecordedScenario) => {
+    invalidate(500, 'A recorded run was loaded. This decision was not applied.');
+    interruptMeasurement('A recorded run replaced the system.');
+    resetWaiting();
+    setReceipt('');
+    enabled.current = true;
+    setArmed(true);
+    props.onLoadScenario(scenario);
+  };
+  const outage = RECORDED_SCENARIOS.find((scenario) => scenario.id === 'wreck-it');
+  const phaseLabel: Record<string, string> = {
+    watching: 'Watching the system',
+    pending: source === 'recorded' ? 'Replaying a saved choice' : 'Choosing a repair',
+    recovering: 'Measuring recovery',
+    observing: 'Watching traffic',
+    'needs-help': 'A different approach is needed',
+    stopped: 'Repairs stopped',
+    paused: 'Simulation paused',
+    offline: 'JEV is not connected',
+    error: 'Repair interrupted',
+    cooldown: 'Waiting for the next request',
+  };
 
   return (
     <section
@@ -812,12 +836,26 @@ export function Operator(props: OperatorProps) {
       data-armed={armed}
       data-pending={pending}
       data-source={source}
-      onKeyDown={(event) => event.stopPropagation()}
+      data-explore-open={exploreOpen}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === 'Escape' && exploreOpen) {
+          setExploreOpen(false);
+          dock.current
+            ?.querySelector<HTMLButtonElement>('.operator-explore-toggle')
+            ?.focus();
+          props.onDisclosureChange();
+        }
+      }}
       onClick={(event) => {
         if (event.target instanceof Element && event.target.closest('summary'))
           props.onDisclosureChange();
       }}
     >
+      <div className="operator-intro">
+        <h2>Break something.</h2>
+        <p>Cause an outage. Watch JEV repair it.</p>
+      </div>
       <div className="operator-heading">
         <span className="operator-watch">
           <i data-state={phase} aria-hidden="true" />
@@ -854,7 +892,7 @@ export function Operator(props: OperatorProps) {
           }
         >
           {source === 'recorded' ? (
-            'No key needed'
+            'No key'
           ) : (
             <>
               {CALL_LIMIT - remaining}/{CALL_LIMIT}
@@ -887,6 +925,24 @@ export function Operator(props: OperatorProps) {
               : 'Resume JEV'}
         </button>
       </div>
+      {source === 'recorded' && outage && (
+        <div className="operator-primary">
+          <button
+            type="button"
+            className="btn operator-try-outage"
+            data-testid="operator-try-outage"
+            disabled={props.challengeActive}
+            onClick={() => loadScenario(outage)}
+          >
+            Try a full outage
+          </button>
+          <p>Loads a demo. Undo restores your canvas.</p>
+        </div>
+      )}
+      <p className="operator-target">
+        Crash and slowdown affect{' '}
+        <strong>{target?.label ?? 'a selected service'}</strong>
+      </p>
       <div className="operator-chaos-controls" aria-label="Break the system">
         <button
           type="button"
@@ -930,90 +986,107 @@ export function Operator(props: OperatorProps) {
           Wreck it
         </button>
       </div>
-      <div className="operator-footer">
-        <p
-          className="operator-status"
-          data-testid="operator-status"
-          data-state={phase}
-          role="status"
-        >
-          {status}
+      <div className="operator-feedback" data-state={phase}>
+        <p className="operator-phase-label">
+          {phaseLabel[phase] ?? 'Watching the system'}
         </p>
-        {phase === 'needs-help' && canRetry && (
-          <button
-            type="button"
-            className="btn btn-sm"
-            data-testid="operator-retry"
-            onClick={() => {
-              resetWaiting();
-              invalidate(0, 'A fresh decision was requested.');
-            }}
+        <div className="operator-footer">
+          <p
+            className="operator-status"
+            data-testid="operator-status"
+            data-state={phase}
+            role="status"
+            title={status}
           >
-            Retry JEV
-          </button>
-        )}
-        {source === 'live' && configured === false && (
-          <button
-            type="button"
-            className="btn btn-sm"
-            data-testid="operator-reconnect"
-            onClick={() => {
-              setConfigured(null);
-              connected.current = null;
-              setConnectionCheck((value) => value + 1);
-            }}
-          >
-            Reconnect
-          </button>
-        )}
+            {status}
+          </p>
+          {phase === 'needs-help' && canRetry && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              data-testid="operator-retry"
+              onClick={() => {
+                resetWaiting();
+                invalidate(0, 'A fresh decision was requested.');
+              }}
+            >
+              Retry JEV
+            </button>
+          )}
+          {source === 'live' && configured === false && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              data-testid="operator-reconnect"
+              onClick={() => {
+                setConfigured(null);
+                connected.current = null;
+                setConnectionCheck((value) => value + 1);
+              }}
+            >
+              Reconnect
+            </button>
+          )}
+        </div>
       </div>
       {receipt && (
         <p className="operator-receipt" data-testid="operator-receipt">
           {receipt}
         </p>
       )}
-      {source === 'recorded' && (
-        <details className="operator-recordings" data-testid="operator-recordings">
-          <summary>Recorded runs</summary>
-          <div className="operator-recording-list">
-            <p>
-              Load a captured setup, then change it yourself. Loading replaces the
-              canvas; Undo brings it back. Only matching saved choices replay. Results
-              below are measured from your run.
-            </p>
-            {RECORDED_SCENARIOS.map((scenario) => (
-              <button
-                type="button"
-                className="operator-recording"
-                key={scenario.id}
-                data-testid={`recording-scenario-${scenario.id}`}
-                disabled={props.challengeActive}
-                onClick={(event) => {
-                  invalidate(
-                    500,
-                    'A recorded run was loaded. This decision was not applied.',
-                  );
-                  interruptMeasurement('A recorded run replaced the system.');
-                  resetWaiting();
-                  setReceipt('');
-                  enabled.current = true;
-                  setArmed(true);
-                  props.onLoadScenario(scenario);
-                  const details = event.currentTarget.closest('details');
-                  if (details) {
-                    details.open = false;
-                    details.querySelector('summary')?.focus();
-                  }
-                }}
-              >
-                <span>{scenario.title}</span>
-                <small>{scenario.description}</small>
-              </button>
-            ))}
-          </div>
-        </details>
-      )}
-      <Activity entries={activity} source={source} />
+      <button
+        type="button"
+        className="btn btn-sm operator-explore-toggle"
+        data-testid="operator-explore-toggle"
+        aria-expanded={exploreOpen}
+        aria-controls="operator-explore"
+        onClick={() => {
+          setExploreOpen((open) => !open);
+          props.onDisclosureChange();
+        }}
+      >
+        <span>{exploreOpen ? 'Close details' : 'Runs & activity'}</span>
+        <span aria-hidden="true">{exploreOpen ? '−' : '+'}</span>
+      </button>
+      <div className="operator-explore" id="operator-explore">
+        {source === 'recorded' && (
+          <details className="operator-recordings" data-testid="operator-recordings">
+            <summary>Recorded runs</summary>
+            <div className="operator-recording-list">
+              <p>
+                Choose a starting point. Undo brings your canvas back. Saved choices
+                replay only for matching settings; results come from your run.
+              </p>
+              {RECORDED_SCENARIOS.map((scenario) => (
+                <button
+                  type="button"
+                  className="operator-recording"
+                  key={scenario.id}
+                  data-testid={`recording-scenario-${scenario.id}`}
+                  disabled={props.challengeActive}
+                  onClick={(event) => {
+                    loadScenario(scenario);
+                    const details = event.currentTarget.closest('details');
+                    if (details) {
+                      details.open = false;
+                      if (window.matchMedia('(max-width: 1099px)').matches) {
+                        setExploreOpen(false);
+                        dock.current
+                          ?.querySelector<HTMLButtonElement>('.operator-explore-toggle')
+                          ?.focus();
+                      } else details.querySelector('summary')?.focus();
+                    }
+                  }}
+                >
+                  <span>{scenario.title}</span>
+                  <small>{scenario.description}</small>
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
+        <Activity entries={activity} source={source} />
+      </div>
     </section>
   );
 }

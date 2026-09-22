@@ -173,6 +173,11 @@ test('the wide components rail resizes, persists and restores its width', async 
   page,
 }) => {
   await openDemo(page);
+  const showComponents = page.getByRole('button', {
+    name: 'Show components',
+    exact: true,
+  });
+  if (await showComponents.isVisible()) await showComponents.click();
   const rail = page.locator('.app-slot-left');
   const handle = page.getByRole('separator', { name: 'Resize the components rail' });
   const initial = await rail.boundingBox();

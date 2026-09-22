@@ -34,4 +34,6 @@ Recorded JEV is the default. Match the captured configuration, demand, damage an
 
 Keep the canvas primary and the repair bar visible. Verify engine state changes, repeated damage, cancellation, Undo, keyboard focus and narrow layouts. An Activity entry must distinguish chosen, applied and measured states. Do not treat model confidence as measured recovery, or a live smoke as a controller benchmark.
 
+`src/playground.css` owns the fork's shell geometry; `RepairPanel.css` owns the repair rail's inner presentation. Desktop uses a side rail, smaller screens use a dismissible drawer with source/Stop available. Keep source labels readable and touch targets at least 44px. Only fresh starter/recorded demos use `layoutDemo` on phones; never automatically rearrange a saved design. Palette placement must avoid foreground note hit areas as well as nodes.
+
 Commit messages use `:emoji: verb[area]: brief description` with a `Generated-by: Codex` trailer for Codex-assisted commits. Keep local drafts, model receipts, budget logs and machine-specific QA artifacts outside the source repository. Publishing code, a deployment or an article requires the applicable task authorization; this guide grants none.

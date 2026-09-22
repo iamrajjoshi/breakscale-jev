@@ -16,7 +16,11 @@ The controller exposes intervention when no mutable repair is available, when JE
 
 The no-key mode ships a finite corpus of real JEV choices and six captured setups. It reuses decisions only for matching topology/configuration, demand, faults and currently legal actions; names and canvas positions can change. No live diagnosis is implied. The running engine supplies every displayed before/after measurement. Unmatched incidents remain editable and show an explicit no-recording outcome. Recorded mode never contacts the model or health API, and never spends/refills the live call budget. A source change, edit, pause or scenario load cancels stale answers. Loading a setup creates one Undo entry.
 
-Keep the source selector and recorded-run shelf inside the existing repair bar. Preserve Breakscale's current palette, system font, spacing and light/dark tokens; use no new visual theme. The graph and moving requests remain the primary interaction. The run shelf is collapsed by default so it doesn't compete with the canvas on phones. Activity always shows whether a choice was recorded or live.
+The playground keeps the live graph prominent, with a separate repair/history rail on wide screens and a compact expandable drawer on smaller screens. A visible product name and one-click full-outage demo explain the first interaction. The component catalog starts closed for new visitors; saved desktop layout choices remain respected. Use quiet neutral surfaces, the existing system font and component colors, and support both light and dark preferences. Stop and the source selector remain accessible. Extra scenes and history live together in the drawer on small screens. Activity always shows whether a choice was recorded or live.
+
+The first-outage action loads the recorded compound incident through the same cancellable, undoable scenario path. Manual controls still act on the current canvas. Showing more history must not trigger model calls, alter the simulator or steal a camera position the visitor deliberately chose. Drawer controls support keyboard dismissal and focus return.
+
+Fresh phone starters and explicitly loaded recorded setups use a vertical three-component layout without the preset's long teaching note. Saved designs retain their positions and annotations. Palette placement avoids existing nodes and note hit areas so new components remain clickable.
 
 ## Shared-lock intervention
 

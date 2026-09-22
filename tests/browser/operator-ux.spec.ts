@@ -38,12 +38,21 @@ const activity = (page: Page, state?: string) =>
     `[data-testid="operator-activity-entry"]${state ? `[data-status="${state}"]` : ''}`,
   );
 async function openActivity(page: Page) {
+  await openExplore(page);
   if (
     !(await page
       .getByTestId('operator-activity')
       .evaluate((el) => el.hasAttribute('open')))
   )
     await page.getByTestId('operator-activity-toggle').click();
+}
+async function openExplore(page: Page) {
+  const toggle = page.getByTestId('operator-explore-toggle');
+  if (
+    (await toggle.isVisible()) &&
+    (await toggle.getAttribute('aria-expanded')) !== 'true'
+  )
+    await toggle.click();
 }
 async function open(page: Page) {
   await page.goto('/');
@@ -991,17 +1000,25 @@ test('expanded history at 320px scrolls and keeps Stop and keyboard controls usa
     await expect.poll(() => requests.length).toBe(step + 1);
   }
   await expect(activity(page, 'cancelled')).toHaveCount(3);
+  await openExplore(page);
   const toggle = page.getByTestId('operator-activity-toggle');
+  if (
+    await page
+      .getByTestId('operator-activity')
+      .evaluate((element) => element.hasAttribute('open'))
+  )
+    await toggle.click();
   await toggle.focus();
   await toggle.press('Enter');
   await expect(page.getByTestId('operator-activity')).toHaveAttribute('open', '');
   await expect(activity(page)).toHaveCount(4);
-  const scroll = page.getByRole('region', { name: 'JEV action history' });
+  const history = page.getByRole('region', { name: 'JEV action history' });
+  const scroll = dock(page);
   await expect
     .poll(() => scroll.evaluate((el) => el.scrollHeight > el.clientHeight))
     .toBe(true);
-  await scroll.focus();
-  await scroll.press('PageDown');
+  await history.focus();
+  await history.press('PageDown');
   await expect.poll(() => scroll.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
   for (const control of [
     page.getByTestId('operator-stop'),
