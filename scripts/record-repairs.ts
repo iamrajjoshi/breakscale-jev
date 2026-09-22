@@ -6,6 +6,7 @@ import { isAbsolute, relative, resolve } from 'node:path';
 import { chooseAction, loadKey } from '../server/jev.ts';
 import { Engine } from '../src/sim/engine.ts';
 import { PRESETS } from '../src/sim/presets.ts';
+import { STARTER_RPS, STARTER_TOPOLOGY } from '../src/starter.ts';
 import type { NodeConfig, Topology } from '../src/sim/types.ts';
 import {
   actionsFor,
@@ -18,9 +19,14 @@ import {
 import type { RecordedRepair, RecordedScenario } from '../src/operator/recordings.ts';
 
 const args = process.argv.slice(2);
+const warmLoadOnly = args[0] === '--starter-load';
+const componentFaultsOnly = args[0] === '--starter-components';
+const richStarter = args[0] === '--starter' || warmLoadOnly || componentFaultsOnly;
+if (richStarter) args.shift();
+const maxCalls = warmLoadOnly ? 1 : componentFaultsOnly ? 7 : richStarter ? 12 : 14;
 assert.ok(
   args.length === 3 && args[0] === '--live' && args[1] === '--output' && args[2],
-  'Usage: npx tsx scripts/record-repairs.ts --live --output /private/outside-repo/directory',
+  'Usage: npx tsx scripts/record-repairs.ts [--starter|--starter-load|--starter-components] --live --output /private/outside-repo/directory',
 );
 const output = resolve(args[2]!);
 const relativeOutput = relative(process.cwd(), output);
@@ -49,7 +55,7 @@ function scenario(
   Object.assign(topology.nodes[2]!.config, changes.db);
   return { id, title, description, topology, rps: changes.rps ?? 50, failures };
 }
-const scenarios: (RecordedScenario & { limit: number })[] = [
+const simpleScenarios: (RecordedScenario & { limit: number })[] = [
   {
     ...scenario(
       'database-crash',
@@ -120,6 +126,97 @@ const scenarios: (RecordedScenario & { limit: number })[] = [
     limit: 4,
   },
 ];
+function starterScenario(
+  id: string,
+  title: string,
+  description: string,
+  rps: number,
+  failures: RecordedScenario['failures'],
+  limit: number,
+): RecordedScenario & { limit: number } {
+  const topology = structuredClone(STARTER_TOPOLOGY);
+  topology.nodes[0]!.config.rps = rps;
+  return { id, title, description, topology, rps, failures, limit };
+}
+const starterScenarios = [
+  starterScenario(
+    'starter-database-crash',
+    'Shared database down',
+    'The cache can answer hits, but every miss reaches the crashed database.',
+    STARTER_RPS,
+    [{ nodeId: 'db', kind: 'crash' }],
+    1,
+  ),
+  starterScenario(
+    'starter-database-slow',
+    'Slow shared database',
+    'Three APIs feed one database whose injected slowdown affects every cache miss.',
+    STARTER_RPS,
+    [{ nodeId: 'db', kind: 'slow' }],
+    1,
+  ),
+  starterScenario(
+    'starter-api-crash',
+    'One API goes down',
+    'The load balancer still sends part of the traffic to the crashed API.',
+    STARTER_RPS,
+    [{ nodeId: 'api1', kind: 'crash' }],
+    1,
+  ),
+  starterScenario(
+    'starter-api-slow',
+    'One slow API',
+    'One branch runs five times slower while the other two keep serving.',
+    STARTER_RPS,
+    [{ nodeId: 'api1', kind: 'slow' }],
+    1,
+  ),
+  starterScenario(
+    'starter-traffic',
+    'Shared database bottleneck',
+    'Double traffic to 300 requests per second. Three APIs still depend on the same database.',
+    STARTER_RPS * 2,
+    undefined,
+    2,
+  ),
+  starterScenario(
+    'starter-outage',
+    'Full web app outage',
+    'Crash the balancer, all three APIs, the cache and the database. Watch each fault clear in turn.',
+    STARTER_RPS,
+    STARTER_TOPOLOGY.nodes
+      .filter((node) => node.kind !== 'client')
+      .map((node) => ({ nodeId: node.id, kind: 'crash' as const })),
+    6,
+  ),
+];
+const componentScenarios = (
+  [
+    ['lb', 'crash', 'Load balancer down'],
+    ['lb', 'slow', 'Slow load balancer'],
+    ['api2', 'crash', 'API 2 goes down'],
+    ['api2', 'slow', 'API 2 slows down'],
+    ['api3', 'slow', 'API 3 slows down'],
+    ['cache', 'crash', 'Shared cache down'],
+    ['cache', 'slow', 'Slow shared cache'],
+  ] as const
+).map(([nodeId, kind, title]) =>
+  starterScenario(
+    `starter-${nodeId}-${kind}`,
+    title,
+    `${title} in the seven-component web app at ${STARTER_RPS} requests per second.`,
+    STARTER_RPS,
+    [{ nodeId, kind }],
+    1,
+  ),
+);
+const scenarios = componentFaultsOnly
+  ? componentScenarios
+  : warmLoadOnly
+    ? starterScenarios.filter((scene) => scene.id === 'starter-traffic')
+    : richStarter
+      ? starterScenarios
+      : simpleScenarios;
 const recordings: RecordedRepair[] = [];
 const attempts: unknown[] = [];
 const outcomes: unknown[] = [];
@@ -149,11 +246,24 @@ function apply(engine: Engine, topology: Topology, action: Action) {
 }
 for (const scene of scenarios) {
   const topology = structuredClone(scene.topology);
-  const engine = new Engine(topology, 87);
+  const engine = new Engine(
+    warmLoadOnly ? structuredClone(STARTER_TOPOLOGY) : topology,
+    87,
+  );
+  if (warmLoadOnly) {
+    advance(engine, 4);
+    engine.updateNodeConfig('client', { rps: scene.rps });
+  }
+  // Single-component captures reproduce a visitor breaking an already-running app.
+  if (componentFaultsOnly) advance(engine, 7);
   for (const failure of scene.failures ?? [])
-    engine.injectFailure(failure.nodeId, failure.kind);
-  advance(engine, 7);
-  for (let step = 0; step < scene.limit && calls < 14; step++) {
+    engine.injectFailure(
+      failure.nodeId,
+      failure.kind,
+      componentFaultsOnly && failure.kind === 'slow' ? { factor: 5 } : {},
+    );
+  advance(engine, warmLoadOnly || componentFaultsOnly ? 3 : 7);
+  for (let step = 0; step < scene.limit && calls < maxCalls; step++) {
     const observation = observe(topology, engine.snapshot());
     if (!incidentFor(observation)) break;
     const request: DecisionRequest = {
@@ -178,7 +288,7 @@ for (const scene of scenarios) {
         key,
         request,
         AbortSignal.timeout(18000),
-        14 - calls,
+        maxCalls - calls,
         fetcher,
       );
       const action = actionsFor(observation, 'operator').find(
@@ -223,7 +333,11 @@ for (const scene of scenarios) {
   outcomes.push({ scenarioId: scene.id, after: observe(topology, engine.snapshot()) });
   await writeFile(
     `${output}/capture.json`,
-    JSON.stringify({ recordedAt, model: MODEL, calls, attempts, outcomes }, null, 2),
+    JSON.stringify(
+      { recordedAt, model: MODEL, maxCalls, calls, attempts, outcomes },
+      null,
+      2,
+    ),
   );
   console.log(
     JSON.stringify({

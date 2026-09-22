@@ -813,7 +813,9 @@ export function Operator(props: OperatorProps) {
     setArmed(true);
     props.onLoadScenario(scenario);
   };
-  const outage = RECORDED_SCENARIOS.find((scenario) => scenario.id === 'wreck-it');
+  const outage = RECORDED_SCENARIOS.find(
+    (scenario) => scenario.id === 'starter-outage',
+  );
   const phaseLabel: Record<string, string> = {
     watching: 'Watching the system',
     pending: source === 'recorded' ? 'Replaying a saved choice' : 'Choosing a repair',
@@ -940,7 +942,7 @@ export function Operator(props: OperatorProps) {
         </div>
       )}
       <p className="operator-target">
-        Crash and slowdown affect{' '}
+        Select a component to target it. Crash and slowdown affect{' '}
         <strong>{target?.label ?? 'a selected service'}</strong>
       </p>
       <div className="operator-chaos-controls" aria-label="Break the system">

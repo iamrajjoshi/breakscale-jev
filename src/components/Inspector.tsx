@@ -1094,6 +1094,8 @@ export interface InspectorProps {
   selectedNodes?: readonly SimNode[];
   /** Count of selected EDGES, for the summary line. Nodes come from above. */
   selectedEdgeCount?: number;
+  /** Delete the selected connections without requiring a hardware keyboard. */
+  onDeleteConnections?: () => void;
   /**
    * Apply one config patch to many nodes at once. Optional: without it a
    * multi-selection is still summarised, just not editable.
@@ -1112,6 +1114,7 @@ export function Inspector({
   lockedFields,
   selectedNodes,
   selectedEdgeCount = 0,
+  onDeleteConnections,
   onChangeMany,
   onDeleteMany,
 }: InspectorProps) {
@@ -1141,7 +1144,8 @@ export function Inspector({
                   : `${selectedEdgeCount} connections selected.`}
               </p>
               <p className="ins-empty ins-empty-hint">
-                Connections have nothing to configure. Press Delete to remove them.
+                Connections have nothing to configure.
+                {!onDeleteConnections && ' Press Delete to remove them.'}
               </p>
             </>
           ) : (
@@ -1150,6 +1154,19 @@ export function Inspector({
             </p>
           )}
         </div>
+        {selectedEdgeCount > 0 && onDeleteConnections && (
+          <div className="ins-foot">
+            <button
+              type="button"
+              className="btn btn-danger ins-delete"
+              onClick={onDeleteConnections}
+            >
+              {selectedEdgeCount === 1
+                ? 'Delete connection'
+                : `Delete ${formatCount(selectedEdgeCount)} connections`}
+            </button>
+          </div>
+        )}
       </aside>
     );
   }

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { MODEL } from '../../src/operator/contracts';
+import { seedSimpleSystem } from './simple-system';
 
 const pageErrors = new WeakMap<Page, string[]>();
 let modelCalls = 0;
@@ -18,6 +19,7 @@ test.afterEach(async ({ page }) => {
 });
 
 async function openDemo(page: Page): Promise<void> {
+  await seedSimpleSystem(page);
   await page.route('**/api/health', (route) =>
     route.fulfill({ json: { configured: false, model: MODEL, callLimit: 18 } }),
   );

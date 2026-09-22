@@ -73,9 +73,12 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
       </p>
       <h3>You cause the incident</h3>
       <p>
-        Select a component and use the damage controls, or turn up the load at the top
-        of the canvas. The components, connections and Inspector are editable. Open an
-        example from the menu to try a different architecture.
+        Start with a web app: a load balancer spreads requests across three API servers,
+        which share a cache and database. Select any component to edit its settings or
+        use the damage controls on it. Drag components to move them, drag between their
+        ports to connect them, and use Components to add more. Select a connection to
+        delete it. Undo restores your edits. Load web app brings back the starter;
+        examples in the menu offer other architectures.
       </p>
       <h3>Play without a key</h3>
       <p>

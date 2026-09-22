@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { seedSimpleSystem } from './simple-system';
 
 const viewports = [
   { width: 1440, height: 900 },
@@ -31,6 +32,7 @@ async function expectReachable(control: Locator): Promise<void> {
 }
 
 async function openDemo(page: Page, empty = false): Promise<void> {
+  await seedSimpleSystem(page);
   await page.route('**/api/health', (route) =>
     route.fulfill({ json: { configured: false, model: 'jev-1.13.0', callLimit: 18 } }),
   );

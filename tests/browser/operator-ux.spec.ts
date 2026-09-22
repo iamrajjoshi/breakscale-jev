@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { PRESETS } from '../../src/sim/presets';
+import { seedSimpleSystem } from './simple-system';
 import {
   actionsFor,
   CALL_LIMIT,
@@ -55,6 +56,7 @@ async function openExplore(page: Page) {
     await toggle.click();
 }
 async function open(page: Page) {
+  await seedSimpleSystem(page);
   await page.goto('/');
   await expect(page.locator('.cv-node')).toHaveCount(3);
   await page.getByTestId('operator-source').selectOption('live');

@@ -7,6 +7,7 @@ import {
   type DecisionRequest,
 } from '../../src/operator/contracts';
 import { PRESETS } from '../../src/sim/presets';
+import { seedSimpleSystem } from './simple-system';
 
 const errors = new WeakMap<Page, string[]>();
 const networkCalls = new WeakMap<Page, string[]>();
@@ -49,6 +50,7 @@ const metric = async (page: Page, label: string) =>
   );
 
 async function open(page: Page) {
+  await seedSimpleSystem(page);
   await page.goto('/');
   await expect(page.locator('.cv-node')).toHaveCount(3);
   await expect(page.getByTestId('operator-source')).toHaveValue('recorded');
@@ -323,25 +325,46 @@ test('the wreck recording applies all three saved choices and measures each chan
   await open(page);
   await loadRecording(page, 'wreck-it');
   await expect(page.locator('.cv-node.is-faulted')).toHaveCount(2);
-  await expect(activity(page)).toHaveCount(3, { timeout: 20_000 });
-  await expect(activity(page).first()).toHaveAttribute('data-status', 'healthy', {
+  const applied = page.locator(
+    '[data-testid="operator-activity-entry"][data-applied="true"]',
+  );
+  await expect(applied).toHaveCount(3, { timeout: 20_000 });
+  await expect(applied.first()).toHaveAttribute('data-status', 'healthy', {
     timeout: 10_000,
   });
   const rows = await activity(page).evaluateAll((entries) =>
     entries.map((entry) => ({
       source: entry.getAttribute('data-source'),
       applied: entry.getAttribute('data-applied'),
+      status: entry.getAttribute('data-status'),
       label: entry.querySelector('.activity-action')?.textContent ?? '',
+      detail: entry.querySelector('.activity-detail')?.textContent ?? '',
       stages: entry.querySelector('.activity-stages')?.textContent ?? '',
       interval: entry.querySelector('.activity-sample-interval')?.textContent ?? '',
     })),
   );
-  expect(rows.map((row) => row.source)).toEqual(['recorded', 'recorded', 'recorded']);
-  expect(rows.map((row) => row.applied)).toEqual(['true', 'true', 'true']);
-  expect(rows[0]!.label).toMatch(/capacity.*12/i);
-  expect(rows[1]!.label).toMatch(/repair.*database/i);
-  expect(rows[2]!.label).toMatch(/repair.*api/i);
-  for (const row of rows) {
+  const repairs = rows.filter((row) => row.applied === 'true');
+  expect(repairs.map((row) => row.source)).toEqual([
+    'recorded',
+    'recorded',
+    'recorded',
+  ]);
+  expect(repairs[0]!.label).toMatch(/capacity.*12/i);
+  expect(repairs[1]!.label).toMatch(/repair.*database/i);
+  expect(repairs[2]!.label).toMatch(/repair.*api/i);
+  // A staged capacity choice can become illegal while fresh traffic is measured.
+  // Such attempts must remain visible as unapplied cancellations, never repairs.
+  for (const row of rows.filter((row) => row.applied !== 'true')) {
+    expect(row.source).toBe('recorded');
+    expect(row.status).toBe('cancelled');
+    expect(row.applied).toBe('false');
+    expect(row.detail).toBe(
+      'The setup no longer matches this recording. No change was applied.',
+    );
+    expect(row.stages).not.toContain('Applied');
+    expect(row.stages).not.toContain('Measured');
+  }
+  for (const row of repairs) {
     expect(row.stages).toContain('Recorded choice');
     expect(row.stages).toContain('Measured');
     const seconds = row.interval.match(/\(([\d.]+)s\)/);

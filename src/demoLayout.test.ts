@@ -12,8 +12,16 @@ describe('phone demo layout', () => {
         before.nodes.map(({ x: _x, y: _y, ...node }) => node),
       );
       expect(mobile.edges).toEqual(before.edges);
-      expect(new Set(mobile.nodes.map((node) => node.x)).size).toBe(1);
-      expect(mobile.nodes.map((node) => node.y)).toEqual([40, 152, 264]);
+      if (mobile.nodes.length === 3) {
+        expect(new Set(mobile.nodes.map((node) => node.x)).size).toBe(1);
+        expect(mobile.nodes.map((node) => node.y)).toEqual([40, 152, 264]);
+      } else {
+        expect(new Set(mobile.nodes.map((node) => node.x)).size).toBe(3);
+        expect(new Set(mobile.nodes.map((node) => node.y)).size).toBe(5);
+        const apis = mobile.nodes.filter((node) => node.kind === 'service');
+        expect(new Set(apis.map((node) => node.y)).size).toBe(1);
+        expect(new Set(apis.map((node) => node.x)).size).toBe(3);
+      }
       expect(mobile.annotations).toBeUndefined();
       expect(scenario.topology).toEqual(before);
     });

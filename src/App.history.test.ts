@@ -6,6 +6,7 @@ import { makeNote } from './sim/annotations';
 import { compileEdit } from './designer/compiler';
 import {
   HISTORY_LIMIT,
+  isRunReplacement,
   restoreRunFailures,
   SessionHistory,
   syncEngine,
@@ -283,15 +284,15 @@ describe('note text edits', () => {
   });
 });
 
-describe('recorded-run history', () => {
+describe.each(['recorded run', 'starter load'])('%s history', (label) => {
   const capture = (topology: Topology, engine: Engine): HistorySnapshot => ({
     ...snap(topology),
     failures: engine.activeFailures(),
   });
-  // App.applyEntry restores faults only for a deliberate recorded-run boundary.
+  // App.applyEntry restores faults only for a deliberate run replacement.
   const apply = (engine: Engine, from: Topology, entry: HistoryEntry) => {
     syncEngine(engine, from, entry.topology);
-    if (entry.label === 'recorded run' && entry.failures !== undefined)
+    if (isRunReplacement(entry.label) && entry.failures !== undefined)
       restoreRunFailures(engine, entry.failures);
   };
   const settings = (engine: Engine) =>
@@ -303,7 +304,7 @@ describe('recorded-run history', () => {
     { kind: 'errors', opts: { rate: 0.4 } },
     { kind: 'partition', opts: { edgeIds: ['original-cut'] } },
   ] satisfies { kind: FailureKind; opts: FailureOpts }[])(
-    'preserves a user $kind fault on Undo and restores the recorded fault on Redo',
+    'preserves a user $kind fault on Undo and restores the loaded run on Redo',
     ({ kind, opts }) => {
       const topology = makeTopology();
       const target = topology.nodes[1]!.id;
@@ -311,11 +312,11 @@ describe('recorded-run history', () => {
       engine.injectFailure(target, kind, opts);
       const before = settings(engine);
       const history = new SessionHistory();
-      history.commit('recorded run', capture(topology, engine));
-      // Loading a recording uses the same ids but resets the run and its faults.
+      history.commit(label, capture(topology, engine));
+      // Loading the same diagram still resets faults, even without new damage.
       engine.setTopology(topology);
       engine.reset();
-      engine.injectFailure(target, 'slow', { factor: 5 });
+      if (label === 'recorded run') engine.injectFailure(target, 'slow', { factor: 5 });
       const recorded = settings(engine);
       engine.advance(1000);
       const time = engine.snapshot().system.timeMs;
@@ -340,16 +341,17 @@ describe('recorded-run history', () => {
     const engine = new Engine(topology);
     const history = new SessionHistory();
     for (let load = 0; load < 2; load++) {
-      history.commit('recorded run', capture(topology, engine));
+      history.commit(label, capture(topology, engine));
       engine.setTopology(topology);
       engine.reset();
-      engine.injectFailure(target, 'crash');
+      if (label === 'recorded run') engine.injectFailure(target, 'crash');
     }
     expect(history.undoDepth).toBe(2);
     const first = history.undo(capture(topology, engine))!;
     expect(first).not.toBeNull();
     apply(engine, topology, first);
-    expect(settings(engine)).toEqual([{ nodeId: target, kind: 'crash' }]);
+    const loaded = label === 'recorded run' ? [{ nodeId: target, kind: 'crash' }] : [];
+    expect(settings(engine)).toEqual(loaded);
     const second = history.undo(capture(topology, engine))!;
     expect(second).not.toBeNull();
     apply(engine, topology, second);
@@ -358,7 +360,7 @@ describe('recorded-run history', () => {
       const entry = history.redo(capture(topology, engine))!;
       expect(entry).not.toBeNull();
       apply(engine, topology, entry);
-      expect(settings(engine)).toEqual([{ nodeId: target, kind: 'crash' }]);
+      expect(settings(engine)).toEqual(loaded);
     }
   });
 
@@ -368,7 +370,7 @@ describe('recorded-run history', () => {
     engine.injectFailure(topology.nodes[1]!.id, 'partition', { edgeIds: ['cut'] });
     const before = capture(topology, engine);
     const history = new SessionHistory();
-    history.commit('recorded run', before);
+    history.commit(label, before);
     before.failures![0]!.edgeIds!.push('later-edit');
     const undo = history.undo(capture(topology, engine))!;
     expect(undo.failures![0]!.edgeIds).toEqual(['cut']);

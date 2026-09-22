@@ -19,7 +19,9 @@ For Live JEV, set `TYPESAFE_API_KEY` in the server environment or `~/.config/jev
 
 ## Play
 
-Start with **Try a full outage** to load a working recorded demo and watch its three repairs. **Crash**, **Slowdown**, and the load controls change your current system. Open **Recorded runs** for six captured setups: a database crash, injected slowdown, a slow API configuration, database errors, 200 requests/second, and a combined crash/load incident. Loading a setup is undoable. You can move and rename components, apply damage again, change settings, pause, and inspect the results.
+The starter is a seven-component web app at 150 requests/second: visitors, a load balancer, three API servers, a shared cache and a database. Drag components to move them, click to edit settings, drag between ports to connect them, and use **Components** to add more. Select a connection to delete it in Inspector. **Load web app** restores the starter as one undoable change; saved diagrams keep their layout and settings.
+
+**Try a full outage** loads that web app with all six backend components crashed, then replays six actual JEV repairs. **Crash**, **Slowdown**, and the load controls change your current system. **Recorded runs** contains eighteen captured setups: twelve for the web app and six for the original three-component chain. Loading a setup is undoable. At its original settings and 150 requests/second, every backend component has a saved repair for an individual crash or slowdown. The full outage also has a captured six-step recovery. Doubling its load to 300 requests/second exposes a shared database bottleneck, but has no saved scaling repair: both capture attempts returned `unsupported`.
 
 The repair/history rail sits beside the canvas on wide screens. On smaller screens, open **Runs & activity** to explore the evidence and other setups; Escape closes it and returns focus. **Components** opens the editor catalog. The current light/dark preference and saved desktop layout are preserved.
 

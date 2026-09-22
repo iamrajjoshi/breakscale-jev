@@ -1,8 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { seedSimpleSystem } from './simple-system';
 
 const pageErrors = new WeakMap<Page, string[]>();
 const modelCalls = new WeakMap<Page, number>();
 test.beforeEach(async ({ page }) => {
+  await seedSimpleSystem(page);
   pageErrors.set(page, []);
   modelCalls.set(page, 0);
   page.on('pageerror', (error) => pageErrors.get(page)?.push(error.message));

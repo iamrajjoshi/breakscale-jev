@@ -67,7 +67,12 @@ import { downloadBackup, restoreBackup } from './backup';
 import { PanelResizer } from './components/PanelResizer';
 import { applyTheme } from './theme/applyTheme';
 import { usePresence } from './components/presence';
-import { restoreRunFailures, SessionHistory, syncEngine } from './history';
+import {
+  isRunReplacement,
+  restoreRunFailures,
+  SessionHistory,
+  syncEngine,
+} from './history';
 import type { HistoryEntry, HistorySnapshot } from './history';
 import {
   ShareLinkTooLargeError,
@@ -89,6 +94,7 @@ import { Operator } from './operator/Operator';
 import type { RecordedScenario } from './operator/recordings';
 import { About } from './operator/About';
 import { layoutDemo } from './demoLayout';
+import { STARTER_TOPOLOGY } from './starter';
 import { findComponentPlacement } from './componentPlacement';
 import './App.css';
 import './playground.css';
@@ -512,9 +518,9 @@ interface Session {
 
 function loadSession(): Session {
   const fallback: Session = {
-    topology: layoutDemo(PRESETS[0]!.topology, isPhone()),
-    rps: clientRps(PRESETS[0]!.topology),
-    presetId: PRESETS[0]!.id,
+    topology: layoutDemo(STARTER_TOPOLOGY, isPhone()),
+    rps: clientRps(STARTER_TOPOLOGY),
+    presetId: null,
   };
 
   try {
@@ -543,7 +549,7 @@ function loadSession(): Session {
     };
   } catch {
     // Corrupt JSON, blocked storage (private mode, disabled cookies) — any
-    // failure here falls back to the first preset rather than breaking boot.
+    // failure here falls back to the starter rather than breaking boot.
     return fallback;
   }
 }
@@ -1150,7 +1156,7 @@ export default function App() {
       // uses: updateNodeConfig for a config-only difference, setTopology for
       // structure. Nothing here resets the simulation or its metrics.
       syncEngine(engine, snapRef.current.topology, entry.topology);
-      if (entry.label === 'recorded run' && entry.failures !== undefined)
+      if (isRunReplacement(entry.label) && entry.failures !== undefined)
         restoreRunFailures(engine, entry.failures);
       topoLiveRef.current = entry.topology;
       snapRef.current = entry;
@@ -2062,7 +2068,7 @@ export default function App() {
       // half-built system can undo back to what they had.
       history.commit(
         label,
-        label === 'recorded run'
+        isRunReplacement(label)
           ? { ...snapRef.current, failures: engine.activeFailures() }
           : snapRef.current,
       );
@@ -2187,6 +2193,15 @@ export default function App() {
     },
     [engine, replaceDesign],
   );
+
+  const handleLoadStarter = useCallback(() => {
+    replaceDesign(layoutDemo(STARTER_TOPOLOGY, isPhone()), null, 'starter load');
+    setChallengeId(null);
+    setOperatorResetEpoch((value) => value + 1);
+    runningRef.current = true;
+    setRunning(true);
+    setSnapshot(engine.snapshot());
+  }, [engine, replaceDesign]);
 
   const handleLoadPreset = useCallback(
     (preset: Preset) => {
@@ -3062,13 +3077,23 @@ export default function App() {
               never see it. Its rect is the canvas minus every open panel.
             */}
             <div ref={stageSafeRef} className="stage-safe" aria-hidden="true" />
-            {phone && (
-              <p className="stage-touch-hint">
-                Pinch to zoom
-                <br />
-                Tap a component
+            <div className="stage-edit-tools" data-chrome="layout">
+              <button
+                type="button"
+                className="btn btn-sm"
+                data-testid="load-starter"
+                disabled={Boolean(challenge)}
+                title="Load a web app with three API servers, a cache and a database. Undo restores your canvas."
+                onClick={handleLoadStarter}
+              >
+                Load web app
+              </button>
+              <p>
+                {phone
+                  ? 'Drag to move. Tap to edit. Pinch to zoom.'
+                  : 'Drag to move. Click to edit. Drag between ports to connect.'}
               </p>
-            )}
+            </div>
             <Operator
               topology={topology}
               snapshot={snapshot}
@@ -3176,6 +3201,14 @@ export default function App() {
             selectedEdgeCount={selectedEdgeCount}
             onChangeMany={handleConfigChangeMany}
             onDeleteMany={handleDeleteMany}
+            onDeleteConnections={() =>
+              handleDeleteSelection(
+                [],
+                topology.edges
+                  .filter((edge) => selectedIds.has(edge.id))
+                  .map((edge) => edge.id),
+              )
+            }
             lockedFields={challenge ? FIXED_DURING_CHALLENGE : undefined}
           />
           <PanelResizer

@@ -31,8 +31,13 @@ export interface HistorySnapshot {
   selectedIds: ReadonlySet<string>;
   rps: number;
   presetId: string | null;
-  /** Run faults are restored only across an explicit recorded-run load. */
+  /** Run faults are restored only across an explicit starter/recorded-run load. */
   failures?: ActiveFailure[];
+}
+
+/** These loads reset run faults even when the authored diagram is identical. */
+export function isRunReplacement(label: string): boolean {
+  return label === 'recorded run' || label === 'starter load';
 }
 
 /**
@@ -327,7 +332,7 @@ export class SessionHistory {
       const entry = this.past.pop()!;
       // Loading a run resets/reinjects faults even when its diagram is identical.
       // Ordinary edits still ignore transient faults and skip true no-ops.
-      if (entry.label !== 'recorded run' && snapshotEqual(entry, current)) continue;
+      if (!isRunReplacement(entry.label) && snapshotEqual(entry, current)) continue;
       this.future.push({ label: entry.label, ...cloneSnapshot(current) });
       this.notify();
       return entry;
@@ -341,7 +346,7 @@ export class SessionHistory {
     this.flushSettling();
     while (this.future.length > 0) {
       const entry = this.future.pop()!;
-      if (entry.label !== 'recorded run' && snapshotEqual(entry, current)) continue;
+      if (!isRunReplacement(entry.label) && snapshotEqual(entry, current)) continue;
       this.pushPast({ label: entry.label, ...cloneSnapshot(current) });
       this.notify();
       return entry;
