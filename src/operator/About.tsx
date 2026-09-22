@@ -46,8 +46,14 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
       }}
     >
       <header className="operator-about-head">
-        <svg className="operator-about-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 3v16h7a6 6 0 0 0 0-12h-3" />
+        <svg
+          className="operator-about-mark"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+          aria-hidden="true"
+        >
+          <path d="M3 2h18v5h-6v3l-6 3V7H3zM9 16l6-3v4h6v5H3v-5h6z" />
         </svg>
         <button
           className="btn btn-ghost btn-sm btn-icon"

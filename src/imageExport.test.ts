@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { serialiseSvg } from './imageExport';
 
@@ -93,6 +94,26 @@ describe('serialiseSvg', () => {
     document.documentElement.setAttribute('data-theme', 'light');
     expect(serialiseSvg(makeSvg(), bounds, '#fff')).toContain('data-theme="light"');
     document.documentElement.removeAttribute('data-theme');
+  });
+
+  it('embeds the bundled Geist font so standalone text keeps its measured widths', () => {
+    const svg = makeSvg();
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.style.fontFamily = 'Geist, sans-serif';
+    text.textContent = 'Shared cache and Database';
+    svg.firstElementChild?.appendChild(text);
+
+    const out = serialiseSvg(svg, bounds, '#fff');
+    const style = /<style[^>]*>([\s\S]*?)<\/style>/.exec(out)?.[1] ?? '';
+    expect(style).toContain('font-family:Geist');
+    expect(style).toContain('font-weight:100 900');
+    const data = /url\("data:font\/woff2;base64,([A-Za-z0-9+/=]+)"\)/.exec(style)?.[1];
+    expect(data).toBeDefined();
+    expect(Buffer.from(data ?? '', 'base64')).toEqual(
+      readFileSync('public/fonts/Geist/Geist-latin.woff2'),
+    );
+    expect(out).toContain('font-family:Geist, sans-serif');
+    expect(svg.querySelector('style')).toBeNull();
   });
 
   it('does not need matchMedia to exist', () => {

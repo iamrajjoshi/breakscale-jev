@@ -995,6 +995,11 @@ export function Operator(props: OperatorProps) {
           <i className="operator-state-dot" aria-hidden="true" />
           {phaseLabel[phase] ?? 'Watching the system'}
         </p>
+        {receipt && (
+          <p className="operator-receipt" data-testid="operator-receipt">
+            {receipt}
+          </p>
+        )}
         <div className="operator-footer">
           <p
             className="operator-status"
@@ -1034,11 +1039,6 @@ export function Operator(props: OperatorProps) {
           )}
         </div>
       </div>
-      {receipt && (
-        <p className="operator-receipt" data-testid="operator-receipt">
-          {receipt}
-        </p>
-      )}
       <div className="operator-demo-actions">
         {source === 'recorded' && outage && (
           <div className="operator-primary">

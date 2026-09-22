@@ -14,10 +14,14 @@
  * Reading back what is actually on screen cannot drift.
  */
 
+import geistFontUrl from '../public/fonts/Geist/Geist-latin.woff2?inline';
+
 /** Properties worth carrying. A full computed style is ~340 declarations per
  *  element, which produces a file tens of megabytes long for a large diagram
  *  and is mostly defaults. This is what the canvas actually paints with. */
 const CARRIED = [
+  'rx',
+  'ry',
   'fill',
   'fill-opacity',
   'stroke',
@@ -139,6 +143,13 @@ export function serialiseSvg(
   clone.setAttribute('width', String(Math.round(w)));
   clone.setAttribute('height', String(Math.round(h)));
   clone.removeAttribute('class');
+
+  // Standalone SVGs and the Image used for PNG export cannot inherit the
+  // page's web fonts. Carry the same font bytes so measured labels and
+  // annotation wraps keep their widths outside the live document.
+  const fontStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  fontStyle.textContent = `@font-face{font-family:Geist;src:url("${geistFontUrl}") format("woff2");font-style:normal;font-weight:100 900}`;
+  clone.prepend(fontStyle);
 
   const body = new XMLSerializer().serializeToString(clone);
   // A background rect rather than a transparent file: a diagram drawn in dark

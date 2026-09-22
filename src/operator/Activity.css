@@ -123,13 +123,14 @@
 }
 
 .activity-action {
-  font-weight: var(--fw-med);
+  font-weight: 550;
+  letter-spacing: -0.015em;
 }
 
 .activity-status {
   margin-top: var(--sp-1);
   color: var(--text-dim);
-  font-size: var(--fs-label);
+  font-size: var(--fs-sm);
 }
 
 .activity-time {

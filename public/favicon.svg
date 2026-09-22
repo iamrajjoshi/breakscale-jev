@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#20252c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#111111" stroke="none">
   <title>breakscale-jev</title>
-  <style>@media (prefers-color-scheme: dark) { svg { stroke: #ecedef; } }</style>
-  <path d="M6 3v16h7a6 6 0 0 0 0-12h-3" />
+  <style>@media (prefers-color-scheme: dark) { svg { fill: #f4f4f4; } }</style>
+  <path d="M3 2h18v5h-6v3l-6 3V7H3zM9 16l6-3v4h6v5H3v-5h6z" />
 </svg>

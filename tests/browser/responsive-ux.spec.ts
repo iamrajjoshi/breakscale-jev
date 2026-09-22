@@ -70,11 +70,19 @@ async function expectGraphVisible(page: Page): Promise<void> {
           const body = node.querySelector('.cv-node-body');
           if (!body) return ['Missing node body'];
           const r = body.getBoundingClientRect();
+          // Hit the painted body, including its edges, rather than the empty
+          // corners outside a rounded SVG rectangle at higher zoom levels.
+          const inset = Math.min(r.width, r.height) * 0.1;
           const points = [
-            [r.left + 2, r.top + 2],
-            [r.right - 2, r.top + 2],
-            [r.left + 2, r.bottom - 2],
-            [r.right - 2, r.bottom - 2],
+            [r.left + inset, r.top + inset],
+            [r.right - inset, r.top + inset],
+            [r.left + inset, r.bottom - inset],
+            [r.right - inset, r.bottom - inset],
+            [r.left + r.width / 2, r.top + 1],
+            [r.left + r.width / 2, r.bottom - 1],
+            [r.left + 1, r.top + r.height / 2],
+            [r.right - 1, r.top + r.height / 2],
+            [r.left + r.width / 2, r.top + r.height / 2],
           ];
           return points.some(
             ([x, y]) => document.elementFromPoint(x!, y!)?.closest('.cv-node') !== node,

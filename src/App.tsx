@@ -2814,8 +2814,14 @@ export default function App() {
       <header className="app-bar" ref={barRef} aria-label="System controls">
         <div className="playground-identity">
           <span className="playground-brand" data-testid="playground-brand">
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="playground-mark">
-              <path d="M6 3v16h7a6 6 0 0 0 0-12h-3" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              stroke="none"
+              aria-hidden="true"
+              className="playground-mark"
+            >
+              <path d="M3 2h18v5h-6v3l-6 3V7H3zM9 16l6-3v4h6v5H3v-5h6z" />
             </svg>
             breakscale-jev
           </span>

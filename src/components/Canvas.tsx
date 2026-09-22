@@ -3616,9 +3616,9 @@ export default function Canvas({
         if (a.x + box.width > maxX) maxX = a.x + box.width;
         if (a.y + h > maxY) maxY = a.y + h;
       }
-      const bg = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg')
-        .trim();
+      // Resolve theme functions such as light-dark() before the color leaves
+      // the page; an exported image has no access to the user's theme setting.
+      const bg = getComputedStyle(hostRef.current ?? document.body).backgroundColor;
       return serialiseSvg(
         svg as SVGSVGElement,
         { x: minX, y: minY, width: maxX - minX, height: maxY - minY },

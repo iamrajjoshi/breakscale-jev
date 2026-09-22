@@ -1,32 +1,54 @@
 /* Fork shell: a live canvas beside its repair history. The editor and simulator
    remain upstream; this layer owns the playground's layout and quieter chrome. */
+@font-face {
+  font-family: Geist;
+  src: url('/fonts/Geist/Geist-latin.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Root tokens also reach dialogs and tooltips rendered into document.body. */
+:root[data-theme],
+:root:not([data-theme]) {
+  --sans: Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bg: light-dark(#fafafa, #0a0a0a);
+  --surface: light-dark(#ffffff, #171717);
+  --surface-2: light-dark(#f0f0f0, #262626);
+  --surface-3: light-dark(#e5e5e5, #303030);
+  --border: light-dark(#e5e5e5, #2c2c2c);
+  --border-strong: light-dark(#b8b8b8, #525252);
+  --text: light-dark(#171717, #ededed);
+  --text-dim: light-dark(#606060, #a3a3a3);
+  --text-faint: light-dark(#737373, #969696);
+  --accent: light-dark(#6651be, #af99ed);
+  --track: light-dark(#e5e5e5, #303030);
+  --grid-line: light-dark(#dedede, #282828);
+  --grid-major: light-dark(#dedede, #282828);
+  --line-2: light-dark(#a3a3a3, #626262);
+  --r-btn: 8px;
+  --r-md: 10px;
+  --r-lg: 16px;
+}
+
 .app {
-  --bg: light-dark(#f7f8fa, #151618);
-  --surface: light-dark(#ffffff, #1c1d20);
-  --surface-2: light-dark(#f1f3f6, #24262b);
-  --border: light-dark(#e2e5e9, #303238);
-  --border-strong: light-dark(#c9cdd4, #494c55);
-  --text: light-dark(#20252c, #ecedef);
-  --text-dim: light-dark(#606975, #a6a9b1);
-  --text-faint: light-dark(#68717c, #9599a3);
-  --accent: light-dark(#315bcc, #94acf4);
-  --grid-line: light-dark(#eceef2, #1c1e22);
-  --grid-major: light-dark(#e0e4eb, #24262d);
-  --repair-width: 304px;
-  --repair-clear: calc(var(--repair-width) + var(--sp-4));
+  --repair-width: 300px;
+  --repair-clear: calc(var(--repair-width) + 28px);
+  font-family: var(--sans);
 }
 
 .app .btn {
   box-shadow: none;
+  border-color: var(--border);
 }
 
 .app .app-bar {
   inset: 0 0 auto;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0;
-  padding: 0 var(--sp-5);
+  padding: 0 var(--sp-3);
+  background: var(--bg);
   border: 0;
-  border-bottom: var(--bw) solid var(--border);
   border-radius: 0;
   box-shadow: none;
 }
@@ -36,7 +58,7 @@
   align-items: center;
   gap: var(--sp-5);
   min-width: 0;
-  min-height: 52px;
+  min-height: 48px;
   grid-area: 1 / 1;
 }
 
@@ -45,34 +67,34 @@
   align-items: center;
   gap: var(--sp-2);
   white-space: nowrap;
-  font-size: var(--fs-num);
-  font-weight: var(--fw-num);
-  letter-spacing: -0.025em;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 
 .playground-brand svg {
   flex: none;
   width: 24px;
   height: 24px;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+  fill: currentColor;
+  stroke: none;
 }
 
 .app .app-island-menu {
   grid-area: 1 / 2;
   padding: 0;
   border: 0;
-  min-height: 52px;
+  min-height: 48px;
 }
 
 .app .app-island-load {
   grid-area: 2 / 1 / auto / -1;
-  padding: var(--sp-2) 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-2);
   min-height: 0;
-  border-top: var(--bw) solid var(--border);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
 }
 
 .app .app-island-menu .btn {
@@ -100,9 +122,10 @@
 }
 
 .app .traffic-metric .num {
-  min-height: 20px;
-  font-size: var(--fs-num);
-  line-height: 20px;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 16px;
 }
 
 .app .traffic-metric .label {
@@ -113,24 +136,27 @@
 
 .app .traffic-metric,
 .app .traffic-metric-group {
-  align-items: flex-end;
+  align-items: center;
 }
 
 .app .traffic-load {
   max-width: none;
+  gap: var(--sp-3);
 }
 
 .app .traffic-load-readout .num-lg {
-  min-width: 44px;
+  min-width: 32px;
+  font-size: 16px;
+  font-weight: 550;
 }
 
 .app .traffic-headline > .traffic-metric:first-child {
-  width: 84px;
+  width: auto;
 }
 
 .app .traffic-headline,
 .app .traffic-metric-group {
-  gap: var(--sp-5);
+  gap: var(--sp-2);
 }
 
 .app .cv-hint-idle {
@@ -138,11 +164,14 @@
 }
 
 .app .cv-node-body {
-  fill: color-mix(in srgb, var(--k-fill, var(--surface)) 38%, var(--surface));
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  rx: 10px;
 }
 
 .app .cv-node-hair {
-  opacity: 0.5;
+  opacity: 0.25;
 }
 
 .app .stage-toggle-library,
@@ -193,20 +222,20 @@
   /* Reserve the rail without resizing the pointer surface. Opening the
      Inspector or library therefore never changes drag coordinates. */
   .app .app-body .operator-dock {
-    top: calc(var(--bar-clear) - 12px);
-    right: 0;
-    bottom: 0;
+    top: var(--bar-clear);
+    right: var(--sp-3);
+    bottom: auto;
     left: auto;
     width: var(--repair-width);
     max-width: none;
     margin: 0;
     padding: var(--sp-4);
-    border: 0;
-    border-left: var(--bw) solid var(--border);
-    border-radius: 0;
+    border: var(--bw) solid var(--border);
+    border-radius: var(--r-lg);
     box-shadow: none;
     display: flex;
     flex-direction: column;
+    max-height: calc(100dvh - var(--bar-clear) - 16px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -250,7 +279,7 @@
   }
 
   .app .app-body.has-metrics .operator-dock {
-    bottom: 0;
+    bottom: auto;
   }
 }
 
@@ -309,7 +338,7 @@
   }
 
   .app .app-island-load {
-    padding: var(--sp-1) 0 var(--sp-2);
+    padding: var(--sp-2);
   }
 
   .app .app-history {
@@ -377,5 +406,101 @@
      normal canvas area. Fitting into a tiny gap would make nodes illegible. */
   .app .app-body:has(.operator-dock[data-explore-open='true']) .stage-safe {
     bottom: 240px;
+  }
+}
+
+/* Compact viewer controls; color belongs to the running system. */
+.app .traffic {
+  gap: var(--sp-3);
+}
+
+.app .traffic-spacer {
+  display: none;
+}
+
+.app .traffic-metric {
+  flex-direction: row;
+  gap: 6px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.app .traffic-actions {
+  gap: 3px;
+}
+
+.app .traffic-actions .btn {
+  border-radius: 50%;
+  border-color: transparent;
+  background: transparent;
+}
+
+.app .traffic-actions .btn + .btn {
+  margin-left: 0;
+}
+
+.app .traffic-actions .transport-toggle {
+  width: 36px;
+  background: var(--text);
+  color: var(--bg);
+}
+
+.app .cv-grid {
+  background-image: radial-gradient(circle, var(--grid-line) 0.8px, transparent 0.8px);
+}
+
+.app .cv-edge-label,
+.app .cv-ledger {
+  font-family: var(--sans);
+  font-weight: 450;
+  letter-spacing: 0;
+}
+
+.app .cv-node-hair {
+  stroke: var(--border-strong);
+}
+
+.app .cv-node:focus-visible .cv-node-body {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.app .cv-node.is-faulted .cv-node-body {
+  stroke: var(--danger);
+  stroke-width: 1.5;
+}
+
+@media (min-width: 721px) {
+  .app .traffic-load-head {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .app .traffic-load-unit {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .traffic-metric {
+    padding: 3px 5px;
+    gap: 4px;
+  }
+
+  .app .traffic-metric .num-hero {
+    font-size: 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  .app .traffic-actions .transport-toggle {
+    width: 44px;
+  }
+
+  .mn-item,
+  .st-seg {
+    min-height: 44px;
   }
 }
