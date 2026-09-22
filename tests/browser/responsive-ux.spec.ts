@@ -204,7 +204,7 @@ for (const viewport of viewports) {
           json: { configured: true, model: 'jev-1.13.0', callLimit: 18 },
         }),
       );
-      await page.getByTestId('operator-reconnect').click();
+      await page.getByTestId('operator-source').selectOption('live');
       await expectReachable(page.getByTestId('operator-break'));
       await page.getByTestId('operator-break').click();
       await expect.poll(() => received).toBe(1);

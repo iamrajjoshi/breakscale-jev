@@ -208,3 +208,10 @@
     min-height: 44px;
   }
 }
+
+.activity-provenance {
+  margin: 0 0 var(--sp-2);
+  padding-left: var(--sp-2);
+  border-left: 2px solid var(--accent);
+  color: var(--text);
+}

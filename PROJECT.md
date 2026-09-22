@@ -4,7 +4,7 @@ breakscale-jev adds a JEV repair watcher to [Breakscale](https://github.com/xevr
 
 ## Product contract
 
-The canvas is the main experience. Change traffic, crash or slow a component, or edit its settings while requests move through the system. JEV watches automatically when connected; Stop disarms it. Manual edits cancel stale answers but keep watch armed. Pausing, hiding the tab and entering challenges suspend decisions.
+The canvas is the main experience. Change traffic, crash or slow a component, or edit its settings while requests move through the system. Recorded JEV is the no-key default; Live JEV watches when explicitly selected and connected. Stop disarms either mode. Manual edits cancel stale answers but keep watch armed. Pausing, hiding the tab and entering challenges suspend decisions.
 
 The watcher detects supported faults or congestion before asking for one finite repair. Healthy idling consumes no calls. After an applied repair it observes at least 2,400 milliseconds of actual simulated time before another repair or a recovery claim. Activity keeps the latest 50 attempts in page memory, separating diagnosis, selection, application and measured outcomes. Model confidence never substitutes for measured recovery.
 
@@ -12,15 +12,21 @@ Supported repairs clear injected faults, disable retries, add instances up to 12
 
 The controller exposes intervention when no mutable repair is available, when JEV chooses the unsupported outcome, or after three waits without meaningful progress. Meaningful progress means at least a one-percentage-point error reduction or a goodput increase of at least one request per second or 5% of offered traffic, whichever is larger, without a demand decline above 10%. Retry JEV and reset retain the call budget.
 
-## Pending recovery gap
+## Recorded play
 
-Severe database write-lock delay can currently escape incident detection. A reproduced state had 40.9 seconds of lock delay, 2.25% errors, no queued requests and 4.23% database utilization, yet `incidentFor` classified it as healthy because the existing queue, error and utilization gates did not trip. A direct severe-lock incident guard is not implemented.
+The no-key mode ships a finite corpus of real JEV choices and six captured setups. It reuses decisions only for matching topology/configuration, demand, faults and currently legal actions; names and canvas positions can change. No live diagnosis is implied. The running engine supplies every displayed before/after measurement. Unmatched incidents remain editable and show an explicit no-recording outcome. Recorded mode never contacts the model or health API, and never spends/refills the live call budget. A source change, edit, pause or scenario load cancels stale answers. Loading a setup creates one Undo entry.
 
-The existing `hasWriteContention` guard prevents adding database instances or slots when active shared write-lock delay exceeds service time, but it only prunes candidates after an incident has been detected. It does not fix this detection gap or make the underlying workload recoverable. Pending work is a real-engine regression, explicit severe-lock detection and truthful intervention when the finite repair menu cannot help. Do not mark this incident fixed or imply automatic recovery.
+Keep the source selector and recorded-run shelf inside the existing repair bar. Preserve Breakscale's current palette, system font, spacing and light/dark tokens; use no new visual theme. The graph and moving requests remain the primary interaction. The run shelf is collapsed by default so it doesn't compete with the canvas on phones. Activity always shows whether a choice was recorded or live.
+
+## Shared-lock intervention
+
+Severe database write-lock delay is detected after warmup when writes are occurring, lock wait exceeds service time, and lock wait is at least one second. A real-engine regression covers low errors, no queued requests and low database utilization despite over 50 seconds of lock delay. Existing fault/error/overload detection keeps its priority.
+
+The contention guard prunes ineffective database growth; it does not repair the shared lock. When no mutable action remains, the controller reports intervention. Recorded matching refuses active write contention. Neither mode may claim the underlying workload is recoverable merely because this incident is now detected.
 
 ## Technical boundaries
 
-Preserve all 30 `src/sim` files byte-for-byte against the upstream revision in UPSTREAM.md. Use React, TypeScript, Vite and the local Node server. The server pins `jev-1.13.0`, validates closed-set choices and finite probability distributions, and keeps credentials out of the browser. No hidden fallback model, arbitrary execution, model-written simulation code, database or cloud backend is part of this scope.
+Preserve all 30 `src/sim` files byte-for-byte against the upstream revision in UPSTREAM.md. Use React, TypeScript, Vite and the local Node server. The server pins `jev-1.13.0`, validates closed-set choices and finite probability distributions, and keeps credentials out of the browser. No hidden fallback model, arbitrary execution, model-written simulation code, database or cloud backend is part of this scope. The no-key recorded experience can run from static assets alone.
 
 One request may be in flight, with eighteen attempted calls per rolling sixty-second window, bounded sessions and provider timeouts. The watcher resumes when the window permits it. These are local-demo controls, not public-service authentication. Retained typed-design modules support internal code and regression tests; there is no model architecture composer in the UI.
 

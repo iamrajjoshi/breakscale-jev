@@ -335,6 +335,67 @@ describe('observed database write contention', () => {
 });
 
 describe('automatic incident detection', () => {
+  it('detects severe shared write locks even when reads keep errors and slot usage low', () => {
+    const design = structuredClone(topology);
+    design.nodes.find((node) => node.kind === 'client')!.config.rps = 1000;
+    Object.assign(design.nodes.find((node) => node.kind === 'service')!.config, {
+      instances: 128,
+      capacity: 512,
+    });
+    const database = design.nodes.find((node) => node.kind === 'db')!;
+    Object.assign(database.config, {
+      instances: 128,
+      capacity: 512,
+      readFraction: 0.98,
+      lockMs: 100,
+    });
+    const engine = new Engine(design, 87);
+    for (let tick = 0; tick < 600; tick++) engine.advance(100);
+    const state = observe(design, engine.snapshot());
+    const observedDatabase = state.nodes.find((node) => node.id === database.id)!;
+    expect(observedDatabase.lockWaitMs).toBeGreaterThan(40000);
+    expect(observedDatabase.writeRate).toBeGreaterThan(0);
+    expect(state.system.errorRate).toBeLessThan(0.03);
+    for (const node of state.nodes) {
+      expect(node.errorRate).toBeLessThan(0.03);
+      expect(node.queued).toBe(0);
+      expect(node.utilization).toBeLessThan(0.9);
+    }
+    expect(incidentFor(state)).toEqual({
+      kind: 'overload',
+      nodeIds: [database.id],
+      summary: 'Writes are waiting on shared locks at Database',
+    });
+    expect(actionsFor(state, 'operator').map((action) => action.kind)).toEqual([
+      'wait',
+      'unsupported',
+    ]);
+    expect(database.config.lockMs).toBe(100);
+    expect(design.nodes.find((node) => node.kind === 'client')!.config.rps).toBe(1000);
+  });
+
+  it('requires at least one second of active write contention above service time after warmup', () => {
+    const { state } = world();
+    const database = state.nodes.find((node) => node.kind === 'db')!;
+    state.system.timeMs = 2000;
+    database.writeRate = 10;
+    database.lockWaitMs = 999;
+    expect(incidentFor(state)).toBeNull();
+    database.lockWaitMs = 1000;
+    expect(incidentFor(state)).toMatchObject({ kind: 'overload' });
+    database.writeRate = 0;
+    expect(incidentFor(state)).toBeNull();
+    database.writeRate = 10;
+    database.serviceMs = 1000;
+    expect(incidentFor(state)).toBeNull();
+    database.serviceMs = 30;
+    database.kind = 'service';
+    expect(incidentFor(state)).toBeNull();
+    database.kind = 'db';
+    state.system.timeMs = 1999;
+    expect(incidentFor(state)).toBeNull();
+  });
+
   it('does not call healthy systems or interpret normal latency as damage', () => {
     const { engine } = world();
     engine.advance(20000);

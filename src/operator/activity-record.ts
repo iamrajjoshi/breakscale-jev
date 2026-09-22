@@ -14,6 +14,8 @@ export type ActivityStatus =
 
 export interface ActivityEntry {
   id: number;
+  source?: 'recorded' | 'live';
+  recording?: { id: string; title: string; recordedAt: string; model: string };
   startedAt: number;
   incident: string;
   status: ActivityStatus;

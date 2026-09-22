@@ -67,7 +67,7 @@ import { downloadBackup, restoreBackup } from './backup';
 import { PanelResizer } from './components/PanelResizer';
 import { applyTheme } from './theme/applyTheme';
 import { usePresence } from './components/presence';
-import { SessionHistory, syncEngine } from './history';
+import { restoreRunFailures, SessionHistory, syncEngine } from './history';
 import type { HistoryEntry, HistorySnapshot } from './history';
 import {
   ShareLinkTooLargeError,
@@ -86,6 +86,7 @@ import { Share, type ShareState } from './components/Share';
 import { DESIGN_FILE_ACCEPT, downloadDesign, readDesignFile } from './designFile';
 import { downloadBlob, svgToPng } from './imageExport';
 import { Operator } from './operator/Operator';
+import type { RecordedScenario } from './operator/recordings';
 import { About } from './operator/About';
 import './App.css';
 
@@ -1157,6 +1158,8 @@ export default function App() {
       // uses: updateNodeConfig for a config-only difference, setTopology for
       // structure. Nothing here resets the simulation or its metrics.
       syncEngine(engine, snapRef.current.topology, entry.topology);
+      if (entry.label === 'recorded run' && entry.failures !== undefined)
+        restoreRunFailures(engine, entry.failures);
       topoLiveRef.current = entry.topology;
       snapRef.current = entry;
       setTopology(entry.topology);
@@ -1171,14 +1174,20 @@ export default function App() {
   );
 
   const handleUndo = useCallback(() => {
-    const entry = history.undo(snapRef.current);
+    const entry = history.undo({
+      ...snapRef.current,
+      failures: engine.activeFailures(),
+    });
     if (entry) applyEntry(entry, 'Undid');
-  }, [history, applyEntry]);
+  }, [engine, history, applyEntry]);
 
   const handleRedo = useCallback(() => {
-    const entry = history.redo(snapRef.current);
+    const entry = history.redo({
+      ...snapRef.current,
+      failures: engine.activeFailures(),
+    });
     if (entry) applyEntry(entry, 'Redid');
-  }, [history, applyEntry]);
+  }, [engine, history, applyEntry]);
 
   /* ---------------- structural edits ---------------- */
 
@@ -1995,6 +2004,7 @@ export default function App() {
    * student, and add/delete/undo must not move it.
    */
   const [fitNonce, setFitNonce] = useState(0);
+  const [operatorLayoutEpoch, setOperatorLayoutEpoch] = useState(0);
   const viewInteractionRef = useRef(0);
   useLayoutEffect(() => {
     // A queued fit yields to canvas gestures, not unrelated repair or panel
@@ -2052,7 +2062,15 @@ export default function App() {
       if (interaction === viewInteractionRef.current) setFitNonce((value) => value + 1);
     }, 220);
     return () => window.clearTimeout(timer);
-  }, [layout.library, layout.metrics, inspectorVisible, compact, phone, barBottom]);
+  }, [
+    layout.library,
+    layout.metrics,
+    inspectorVisible,
+    compact,
+    phone,
+    barBottom,
+    operatorLayoutEpoch,
+  ]);
 
   /**
    * Replace the whole design, as one history entry.
@@ -2068,7 +2086,12 @@ export default function App() {
     (fresh: Topology, nextPresetId: string | null, label: string) => {
       // ONE entry, captured before the load, so a student who replaces a
       // half-built system can undo back to what they had.
-      history.commit(label, snapRef.current);
+      history.commit(
+        label,
+        label === 'recorded run'
+          ? { ...snapRef.current, failures: engine.activeFailures() }
+          : snapRef.current,
+      );
       setTopology(fresh);
       setRps(clientRps(fresh));
       setPresetId(nextPresetId);
@@ -2171,6 +2194,25 @@ export default function App() {
       id: toastSeq.current,
     });
   }, []);
+
+  const handleLoadRecording = useCallback(
+    (scenario: RecordedScenario) => {
+      replaceDesign(structuredClone(scenario.topology), null, 'recorded run');
+      setChallengeId(null);
+      for (const failure of scenario.failures ?? []) {
+        engine.injectFailure(
+          failure.nodeId,
+          failure.kind,
+          failure.kind === 'slow' ? { factor: 5 } : {},
+        );
+      }
+      setOperatorResetEpoch((value) => value + 1);
+      runningRef.current = true;
+      setRunning(true);
+      setSnapshot(engine.snapshot());
+    },
+    [engine, replaceDesign],
+  );
 
   const handleLoadPreset = useCallback(
     (preset: Preset) => {
@@ -3050,6 +3092,8 @@ export default function App() {
               onFailure={handleOperatorFailure}
               onConfigChange={handleOperatorConfigChange}
               onTrafficChange={handleRpsChange}
+              onLoadScenario={handleLoadRecording}
+              onDisclosureChange={() => setOperatorLayoutEpoch((value) => value + 1)}
             />
             {challenge && challengeResult ? (
               <ChallengePanel

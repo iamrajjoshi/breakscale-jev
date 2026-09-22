@@ -46,7 +46,11 @@ function Timestamp({ value }: { value: number }) {
 function ActivityRow({ entry }: { entry: ActivityEntry }) {
   const stages = [
     { label: 'Started', at: entry.startedAt },
-    ...(entry.chosenAt === undefined ? [] : [{ label: 'Chosen', at: entry.chosenAt }]),
+    ...(entry.chosenAt === undefined
+      ? []
+      : [
+          { label: entry.recording ? 'Recorded choice' : 'Chosen', at: entry.chosenAt },
+        ]),
     ...(entry.appliedAt === undefined
       ? []
       : [{ label: 'Applied', at: entry.appliedAt }]),
@@ -81,6 +85,7 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
       className="activity-entry"
       data-testid="operator-activity-entry"
       data-status={entry.status}
+      data-source={entry.source ?? 'live'}
       data-applied={entry.appliedAt !== undefined}
     >
       <details className="activity-evidence">
@@ -90,13 +95,26 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
           </span>
           <span className="activity-entry-label">
             <span className="activity-action">{entry.action ?? entry.incident}</span>
-            <span className="activity-status">{statusLabels[entry.status]}</span>
+            <span className="activity-status">
+              {entry.recording ? 'Recorded JEV · ' : 'Live JEV · '}
+              {entry.recording && entry.status === 'diagnosing'
+                ? 'Replaying'
+                : statusLabels[entry.status]}
+            </span>
           </span>
           <span className="activity-chevron" aria-hidden="true">
             ›
           </span>
         </summary>
         <div className="activity-evidence-body">
+          {entry.recording && (
+            <p className="activity-provenance">
+              Saved choice: {entry.recording.title}. Recorded{' '}
+              {entry.recording.recordedAt.slice(0, 10)} with {entry.recording.model}.
+              Reused for matching settings; no live JEV call. Measurements below come
+              from this simulation.
+            </p>
+          )}
           {entry.detail && <p className="activity-detail">{entry.detail}</p>}
           <ol className="activity-stages" aria-label="Recorded stages">
             {stages.map((stage) => (
@@ -140,7 +158,13 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
   );
 }
 
-export function Activity({ entries }: { entries: ActivityEntry[] }) {
+export function Activity({
+  entries,
+  source,
+}: {
+  entries: ActivityEntry[];
+  source: 'recorded' | 'live';
+}) {
   const [open, setOpen] = useState(
     () => window.matchMedia('(min-width: 721px)').matches,
   );
@@ -174,7 +198,9 @@ export function Activity({ entries }: { entries: ActivityEntry[] }) {
       >
         {entries.length === 0 ? (
           <p className="activity-empty">
-            Change traffic or edit a component. JEV’s decisions will appear here.
+            {source === 'recorded'
+              ? 'Try Crash or Slowdown. Saved choices and your run’s measurements appear here.'
+              : 'Change traffic or edit a component. JEV’s decisions will appear here.'}
           </p>
         ) : (
           <ol className="activity-list">

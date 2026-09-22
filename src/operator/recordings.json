@@ -1,0 +1,2734 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "database-crash",
+      "title": "Database down",
+      "description": "Crash the database, then watch requests recover.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 50,
+      "failures": [
+        {
+          "nodeId": "db",
+          "kind": "crash"
+        }
+      ]
+    },
+    {
+      "id": "database-slow",
+      "title": "Slow database",
+      "description": "Make the database five times slower while traffic keeps moving.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 50,
+      "failures": [
+        {
+          "nodeId": "db",
+          "kind": "slow"
+        }
+      ]
+    },
+    {
+      "id": "slow-service",
+      "title": "Slow deployment",
+      "description": "An API setting has jumped from 25ms to 500ms per request.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 500,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 50
+    },
+    {
+      "id": "database-errors",
+      "title": "Bad database deploy",
+      "description": "Half of database requests fail because of an edited error setting.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0.5,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 50
+    },
+    {
+      "id": "traffic-200",
+      "title": "Traffic surge",
+      "description": "Four times the original traffic exposes the database bottleneck.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 200
+    },
+    {
+      "id": "wreck-it",
+      "title": "Everything breaks",
+      "description": "Both services crash just as demand quadruples.",
+      "topology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "rps": 200,
+      "failures": [
+        {
+          "nodeId": "api",
+          "kind": "crash"
+        },
+        {
+          "nodeId": "db",
+          "kind": "crash"
+        }
+      ]
+    }
+  ],
+  "recordings": [
+    {
+      "id": "database-crash-1",
+      "scenarioId": "database-crash",
+      "title": "Database down",
+      "recordedAt": "2026-09-22T03:52:17.188Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.15906942556175047,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 0,
+            "fault": "crash"
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 52.22222222222222,
+          "goodputRps": 0,
+          "errorRate": 1,
+          "p99": 0
+        }
+      },
+      "originalAction": {
+        "id": "repair_2",
+        "kind": "repair",
+        "nodeId": "db",
+        "label": "Repair Database: clear its crash fault"
+      },
+      "confidence": 0.99,
+      "probabilities": {
+        "scale_2": 0,
+        "repair_2": 1,
+        "capacity_2": 0,
+        "unsupported": 0,
+        "wait": 0
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 125.41417595547081,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.15740558725768003,
+            "queued": 0,
+            "p99": 125.41417595547053,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.2124382443891115,
+            "queued": 0,
+            "p99": 95.03610253831583,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 7.777777777777778,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 44.44444444444444,
+          "goodputRps": 46.666666666666664,
+          "errorRate": 0,
+          "p99": 125.41417595547081
+        }
+      },
+      "evidence": {
+        "requestSha256": "bfd1502174c75067a9ff2f0f1f5bcb191e270de047844958349f38c6097357f0",
+        "responseSha256": "bd3fdadb33c51b636f03967b73e87bd33bb52cfb760c5f7d6182ac07e3dcda22"
+      }
+    },
+    {
+      "id": "database-slow-1",
+      "scenarioId": "database-slow",
+      "title": "Slow database",
+      "recordedAt": "2026-09-22T03:52:17.280Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 130.6898887732795,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.1278485330351425,
+            "queued": 0,
+            "p99": 130.68988877327973,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.19543689717871987,
+            "queued": 0,
+            "p99": 93.07524844502004,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 1.1111111111111112,
+            "fault": "slow"
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 40,
+          "goodputRps": 45.55555555555556,
+          "errorRate": 0,
+          "p99": 130.6898887732795
+        }
+      },
+      "originalAction": {
+        "id": "repair_2",
+        "kind": "repair",
+        "nodeId": "db",
+        "label": "Repair Database: clear its slow fault"
+      },
+      "confidence": 0.99,
+      "probabilities": {
+        "repair_2": 0.99,
+        "unsupported": 0.01,
+        "wait": 0
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 136.8637963359763,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.1702208287310819,
+            "queued": 0,
+            "p99": 136.8637963359761,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.2360770359193978,
+            "queued": 0,
+            "p99": 97.7947147389318,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 4.444444444444445,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 58.888888888888886,
+          "goodputRps": 55.55555555555556,
+          "errorRate": 0,
+          "p99": 136.8637963359763
+        }
+      },
+      "evidence": {
+        "requestSha256": "a3cf03825fef2d0c589df5f17ad4595b7fe524815caf9b7950cc6525d4fc4699",
+        "responseSha256": "9693a95166e6a2562ea34c922d50a77e67ced83ab77026886bf76017abfc4d70"
+      }
+    },
+    {
+      "id": "slow-service-1",
+      "scenarioId": "slow-service",
+      "title": "Slow deployment",
+      "recordedAt": "2026-09-22T03:52:17.413Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 500,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 1936.0957578810485,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 500,
+            "utilization": 0.9999991060179048,
+            "queued": 63,
+            "p99": 1304.929876876098,
+            "errorRate": 0.7826086956521738,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.059408553695403606,
+            "queued": 0,
+            "p99": 89.3388086878305,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 0,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 51.111111111111114,
+          "goodputRps": 0,
+          "errorRate": 1,
+          "p99": 1936.0957578810485
+        }
+      },
+      "originalAction": {
+        "id": "latency_1",
+        "kind": "service-time",
+        "nodeId": "api",
+        "value": 25,
+        "label": "Restore API Server service-time setting from 500ms to the component default 25ms"
+      },
+      "confidence": 0.27,
+      "probabilities": {
+        "scale_1": 0.28,
+        "capacity_1": 0.28,
+        "unsupported": 0.02,
+        "wait": 0,
+        "latency_1": 0.42
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 129.58366088848783,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.1525919530917326,
+            "queued": 0,
+            "p99": 129.5836608884878,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.24961296081755643,
+            "queued": 0,
+            "p99": 95.14067813034822,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 7.777777777777778,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 57.77777777777778,
+          "goodputRps": 63.333333333333336,
+          "errorRate": 0,
+          "p99": 129.58366088848783
+        }
+      },
+      "evidence": {
+        "requestSha256": "b64cec65de43574ef9cd3b7a10572fd658a636899dc979a9659b4ba6cbe42683",
+        "responseSha256": "746b56e9c215abb772b83c2c4e6cd4ffc45c8369c0f5fd89bc76fa1de65beb4c"
+      }
+    },
+    {
+      "id": "database-errors-1",
+      "scenarioId": "database-errors",
+      "title": "Bad database deploy",
+      "recordedAt": "2026-09-22T03:52:17.579Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 50
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0.5,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 127.25757714237875,
+            "errorRate": 0.45945945945945943,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.10444411877692936,
+            "queued": 0,
+            "p99": 127.25757714237821,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.2566821867364832,
+            "queued": 0,
+            "p99": 95.31894074636223,
+            "errorRate": 0.45945945945945943,
+            "configuredErrorRate": 0.5,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 3.3333333333333335,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 43.333333333333336,
+          "goodputRps": 22.22222222222222,
+          "errorRate": 0.45945945945945943,
+          "p99": 127.25757714237875
+        }
+      },
+      "originalAction": {
+        "id": "errors_2",
+        "kind": "error-rate",
+        "nodeId": "db",
+        "value": 0,
+        "label": "Restore Database configured error probability from 50% to the component default 0%"
+      },
+      "confidence": 0.74,
+      "probabilities": {
+        "scale_2": 0.03,
+        "capacity_2": 0.04,
+        "wait": 0.02,
+        "errors_2": 0.78,
+        "unsupported": 0.13
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 50,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 130.58607624431434,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.17112256911233933,
+            "queued": 0,
+            "p99": 130.58607624431423,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.28829347195441124,
+            "queued": 0,
+            "p99": 88.1610459687722,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 3.3333333333333335,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 56.666666666666664,
+          "goodputRps": 57.77777777777778,
+          "errorRate": 0,
+          "p99": 130.58607624431434
+        }
+      },
+      "evidence": {
+        "requestSha256": "e3088fcb96d2df7a858ad2ed37232a0c6f0fb598f9c886e6b73de4ed9ebedc75",
+        "responseSha256": "70d288216443eedeeace85c314c91245becbb63543319ec89d31a508fffe7905"
+      }
+    },
+    {
+      "id": "traffic-200-1",
+      "scenarioId": "traffic-200",
+      "title": "Traffic surge",
+      "recordedAt": "2026-09-22T03:52:17.742Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 300.4857446030838,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.6511558515796984,
+            "queued": 0,
+            "p99": 131.18173850516183,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.9977322036790663,
+            "queued": 20,
+            "p99": 103.20004432073712,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 5.357142857142857,
+            "writeRate": 15.555555555555555,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 204.44444444444446,
+          "goodputRps": 194.44444444444446,
+          "errorRate": 0,
+          "p99": 300.4857446030838
+        }
+      },
+      "originalAction": {
+        "id": "capacity_2",
+        "kind": "capacity",
+        "nodeId": "db",
+        "value": 12,
+        "label": "Increase Database capacity from 6 to 12 concurrent slots per instance"
+      },
+      "confidence": 0.35,
+      "probabilities": {
+        "scale_2": 0.07,
+        "wait": 0.09,
+        "capacity_2": 0.51,
+        "unsupported": 0.33
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 136.41526446271234,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.6183723569688298,
+            "queued": 0,
+            "p99": 136.4152644627119,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 12,
+            "serviceMs": 30,
+            "utilization": 0.4859462370649075,
+            "queued": 0,
+            "p99": 100.5128626392444,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 2.5,
+            "writeRate": 13.333333333333334,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 188.88888888888889,
+          "goodputRps": 183.33333333333334,
+          "errorRate": 0,
+          "p99": 136.41526446271234
+        }
+      },
+      "evidence": {
+        "requestSha256": "1581babed17ec2ed885ab9f05829b9238a1abf4ec309d056de0ee7d17fb104d9",
+        "responseSha256": "b47a40af6f83cb0047b36a1658f5bdaeb693ad1fcf0ba3a9bbd9b36c3a652206"
+      }
+    },
+    {
+      "id": "wreck-it-1",
+      "scenarioId": "wreck-it",
+      "title": "Everything breaks",
+      "recordedAt": "2026-09-22T03:52:18.015Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": "crash"
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 0,
+            "fault": "crash"
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 7000.000000000038,
+          "offeredRps": 202.22222222222223,
+          "goodputRps": 0,
+          "errorRate": 1,
+          "p99": 0
+        }
+      },
+      "originalAction": {
+        "id": "repair_1",
+        "kind": "repair",
+        "nodeId": "api",
+        "label": "Repair API Server: clear its crash fault"
+      },
+      "confidence": 0.73,
+      "probabilities": {
+        "scale_1": 0,
+        "wait": 0,
+        "unsupported": 0.02,
+        "capacity_1": 0,
+        "repair_2": 0.2,
+        "repair_1": 0.78
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.5219947185382215,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 0,
+            "fault": "crash"
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 172.22222222222223,
+          "goodputRps": 0,
+          "errorRate": 1,
+          "p99": 0
+        }
+      },
+      "evidence": {
+        "requestSha256": "97c1d50a48047b1c2aa05697ea491396327e32ded5c02304e6ce4ceaf60491aa",
+        "responseSha256": "efa7276484161d0a869521fb6a1b7d20ad7c2c949a288ee0809e10e2da5e9f26"
+      }
+    },
+    {
+      "id": "wreck-it-2",
+      "scenarioId": "wreck-it",
+      "title": "Everything breaks",
+      "recordedAt": "2026-09-22T03:52:18.108Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.5219947185382215,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 0,
+            "errorRate": 1,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 0,
+            "writeRate": 0,
+            "fault": "crash"
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 12999.999999999885,
+          "offeredRps": 172.22222222222223,
+          "goodputRps": 0,
+          "errorRate": 1,
+          "p99": 0
+        }
+      },
+      "originalAction": {
+        "id": "repair_2",
+        "kind": "repair",
+        "nodeId": "db",
+        "label": "Repair Database: clear its crash fault"
+      },
+      "confidence": 0.99,
+      "probabilities": {
+        "unsupported": 0,
+        "wait": 0,
+        "capacity_2": 0,
+        "scale_2": 0,
+        "repair_2": 1
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 337.67110152299745,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.6499396284557897,
+            "queued": 0,
+            "p99": 144.21610879187995,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.9892285451917235,
+            "queued": 18,
+            "p99": 101.23631276275457,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 12.857142857142858,
+            "writeRate": 23.333333333333332,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 18999.999999999953,
+          "offeredRps": 195.55555555555554,
+          "goodputRps": 193.33333333333334,
+          "errorRate": 0,
+          "p99": 337.67110152299745
+        }
+      },
+      "evidence": {
+        "requestSha256": "94ad7d92bbf4aedb87ea586d14f206fc29389745b22ca617aa77026bde937d21",
+        "responseSha256": "9564768ca556ffc8ec207eb592e2c4418605e0e520b7f5846a5573d3cf0ad983"
+      }
+    },
+    {
+      "id": "wreck-it-3",
+      "scenarioId": "wreck-it",
+      "title": "Everything breaks",
+      "recordedAt": "2026-09-22T03:52:18.195Z",
+      "model": "jev-1.13.0",
+      "originalTopology": {
+        "nodes": [
+          {
+            "id": "client",
+            "kind": "client",
+            "label": "Client",
+            "x": 40,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 1,
+              "serviceMs": 0,
+              "serviceCv": 0,
+              "queueLimit": 0,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 2000,
+              "retries": 0,
+              "rps": 200
+            }
+          },
+          {
+            "id": "api",
+            "kind": "service",
+            "label": "API Server",
+            "x": 340,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 8,
+              "serviceMs": 25,
+              "serviceCv": 0.6,
+              "queueLimit": 64,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0
+            }
+          },
+          {
+            "id": "db",
+            "kind": "db",
+            "label": "Database",
+            "x": 660,
+            "y": 200,
+            "config": {
+              "instances": 1,
+              "replicaCount": 3,
+              "replicationLagMs": 50,
+              "readFraction": 0.9,
+              "shardCount": 4,
+              "shardCapacity": 4,
+              "hotKeyFraction": 0,
+              "capacity": 6,
+              "serviceMs": 30,
+              "serviceCv": 0.7,
+              "queueLimit": 48,
+              "hitRate": 0,
+              "errorRate": 0,
+              "timeoutMs": 0,
+              "retries": 0,
+              "rps": 0,
+              "lockMs": 15
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "client->api",
+            "from": "client",
+            "to": "api",
+            "weight": 1
+          },
+          {
+            "id": "api->db",
+            "from": "api",
+            "to": "db",
+            "weight": 1
+          }
+        ]
+      },
+      "originalObservation": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 337.67110152299745,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.6499396284557897,
+            "queued": 0,
+            "p99": 144.21610879187995,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 6,
+            "serviceMs": 30,
+            "utilization": 0.9892285451917235,
+            "queued": 18,
+            "p99": 101.23631276275457,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 12.857142857142858,
+            "writeRate": 23.333333333333332,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 18999.999999999953,
+          "offeredRps": 195.55555555555554,
+          "goodputRps": 193.33333333333334,
+          "errorRate": 0,
+          "p99": 337.67110152299745
+        }
+      },
+      "originalAction": {
+        "id": "capacity_2",
+        "kind": "capacity",
+        "nodeId": "db",
+        "value": 12,
+        "label": "Increase Database capacity from 6 to 12 concurrent slots per instance"
+      },
+      "confidence": 0.29,
+      "probabilities": {
+        "capacity_2": 0.47,
+        "wait": 0.1,
+        "scale_2": 0.04,
+        "unsupported": 0.39
+      },
+      "after": {
+        "nodes": [
+          {
+            "id": "client",
+            "label": "Client",
+            "kind": "client",
+            "instances": 1,
+            "retries": 0,
+            "rps": 200,
+            "capacity": 1,
+            "serviceMs": 0,
+            "utilization": 0,
+            "queued": 0,
+            "p99": 136.11948058450864,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "api",
+            "label": "API Server",
+            "kind": "service",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 8,
+            "serviceMs": 25,
+            "utilization": 0.6341153193950944,
+            "queued": 0,
+            "p99": 136.1194805845081,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "fault": null
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "kind": "db",
+            "instances": 1,
+            "retries": 0,
+            "rps": 0,
+            "capacity": 12,
+            "serviceMs": 30,
+            "utilization": 0.5427793600920648,
+            "queued": 0,
+            "p99": 91.81573655029544,
+            "errorRate": 0,
+            "configuredErrorRate": 0,
+            "lockMs": 15,
+            "lockWaitMs": 7.058823529411765,
+            "writeRate": 18.88888888888889,
+            "fault": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "client",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ],
+        "system": {
+          "timeMs": 25000.00000000039,
+          "offeredRps": 211.11111111111111,
+          "goodputRps": 214.44444444444446,
+          "errorRate": 0,
+          "p99": 136.11948058450864
+        }
+      },
+      "evidence": {
+        "requestSha256": "cffeb7de3054c9af9d83bcfe1affda29a1edd4b6405ec3ade8e6d84032aae6c1",
+        "responseSha256": "c5b190771f525cd9f1e7859b1591b23786617e4ada0724e6d725f78beef16ed9"
+      }
+    }
+  ]
+}

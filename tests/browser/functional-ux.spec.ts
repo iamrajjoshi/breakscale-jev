@@ -14,6 +14,7 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({ json: { configured: false, model: 'jev-1.13.0', callLimit: 18 } }),
   );
   await page.goto('/');
+  await page.getByTestId('operator-stop').click();
   await expect(page.locator('.cv-node')).toHaveCount(3);
 });
 test.afterEach(async ({ page }) => {

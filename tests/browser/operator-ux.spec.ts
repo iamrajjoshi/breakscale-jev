@@ -48,6 +48,7 @@ async function openActivity(page: Page) {
 async function open(page: Page) {
   await page.goto('/');
   await expect(page.locator('.cv-node')).toHaveCount(3);
+  await page.getByTestId('operator-source').selectOption('live');
   await expect(dock(page)).toHaveAttribute('data-armed', 'true');
   await expect(status(page)).toBeVisible();
 }

@@ -201,7 +201,8 @@
 @media (max-width: 720px) {
   .app .app-body .stage-canvas .stage-safe,
   .app .app-body.has-metrics .stage-canvas .stage-safe {
-    top: 0;
+    /* Leave room for the phone's zoom controls and gesture hint. */
+    top: calc(44px + var(--sp-2) * 2);
     left: var(--sp-4);
     right: var(--sp-4);
     bottom: calc(var(--operator-height, 140px) + 16px);
@@ -235,5 +236,84 @@
   }
   .operator-about {
     padding: var(--sp-5);
+  }
+}
+
+/* The source and run shelf reuse Breakscale's controls; the canvas stays primary. */
+.operator-source {
+  font: inherit;
+  font-weight: var(--fw-med);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-sm);
+  min-height: 32px;
+  max-width: 100%;
+  padding: var(--sp-1);
+  cursor: pointer;
+}
+.operator-source:focus-visible,
+.operator-recordings > summary:focus-visible,
+.operator-recording:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.operator-recordings {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.operator-recordings > summary {
+  cursor: pointer;
+  min-height: 28px;
+  align-content: center;
+  color: var(--accent-ink);
+}
+.operator-recording-list {
+  max-height: 160px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-1);
+}
+.operator-recording-list > p {
+  color: var(--text-dim);
+  margin: 0 0 var(--sp-2);
+  line-height: 1.5;
+}
+.operator-recording {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-top: var(--bw) solid var(--border);
+  padding: var(--sp-2) 0;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.operator-recording:hover {
+  background: var(--accent-soft);
+}
+.operator-recording:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.operator-recording > span,
+.operator-recording > small {
+  display: block;
+}
+.operator-recording > span {
+  font-weight: var(--fw-med);
+}
+.operator-recording > small {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-label);
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+@media (pointer: coarse) {
+  .operator-source,
+  .operator-recordings > summary {
+    min-height: 44px;
   }
 }

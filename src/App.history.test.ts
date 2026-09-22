@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Topology } from './sim/types';
+import type { FailureKind, FailureOpts, Topology } from './sim/types';
 import { Engine } from './sim/engine';
 import { makeNode } from './sim/presets';
 import { makeNote } from './sim/annotations';
 import { compileEdit } from './designer/compiler';
-import { HISTORY_LIMIT, SessionHistory, syncEngine } from './history';
-import type { HistorySnapshot } from './history';
+import {
+  HISTORY_LIMIT,
+  restoreRunFailures,
+  SessionHistory,
+  syncEngine,
+} from './history';
+import type { HistoryEntry, HistorySnapshot } from './history';
 
 /*
  * Undo/redo semantics, tested against the same SessionHistory instance the
@@ -275,6 +280,116 @@ describe('note text edits', () => {
     const t0 = withNote('same');
     h.commit('note edit', snap(t0));
     expect(h.undo(snap(t0))).toBeNull();
+  });
+});
+
+describe('recorded-run history', () => {
+  const capture = (topology: Topology, engine: Engine): HistorySnapshot => ({
+    ...snap(topology),
+    failures: engine.activeFailures(),
+  });
+  // App.applyEntry restores faults only for a deliberate recorded-run boundary.
+  const apply = (engine: Engine, from: Topology, entry: HistoryEntry) => {
+    syncEngine(engine, from, entry.topology);
+    if (entry.label === 'recorded run' && entry.failures !== undefined)
+      restoreRunFailures(engine, entry.failures);
+  };
+  const settings = (engine: Engine) =>
+    engine.activeFailures().map(({ sinceMs: _sinceMs, ...failure }) => failure);
+
+  it.each([
+    { kind: 'crash', opts: {} },
+    { kind: 'slow', opts: { factor: 7 } },
+    { kind: 'errors', opts: { rate: 0.4 } },
+    { kind: 'partition', opts: { edgeIds: ['original-cut'] } },
+  ] satisfies { kind: FailureKind; opts: FailureOpts }[])(
+    'preserves a user $kind fault on Undo and restores the recorded fault on Redo',
+    ({ kind, opts }) => {
+      const topology = makeTopology();
+      const target = topology.nodes[1]!.id;
+      const engine = new Engine(topology);
+      engine.injectFailure(target, kind, opts);
+      const before = settings(engine);
+      const history = new SessionHistory();
+      history.commit('recorded run', capture(topology, engine));
+      // Loading a recording uses the same ids but resets the run and its faults.
+      engine.setTopology(topology);
+      engine.reset();
+      engine.injectFailure(target, 'slow', { factor: 5 });
+      const recorded = settings(engine);
+      engine.advance(1000);
+      const time = engine.snapshot().system.timeMs;
+
+      const undo = history.undo(capture(topology, engine))!;
+      expect(undo).not.toBeNull();
+      apply(engine, topology, undo);
+      expect(settings(engine)).toEqual(before);
+      expect(engine.snapshot().system.timeMs).toBe(time);
+
+      const redo = history.redo(capture(undo.topology, engine))!;
+      expect(redo).not.toBeNull();
+      apply(engine, undo.topology, redo);
+      expect(settings(engine)).toEqual(recorded);
+      expect(engine.snapshot().system.timeMs).toBe(time);
+    },
+  );
+
+  it('keeps repeated identical scene loads separate and removes their faults on Undo', () => {
+    const topology = makeTopology();
+    const target = topology.nodes[1]!.id;
+    const engine = new Engine(topology);
+    const history = new SessionHistory();
+    for (let load = 0; load < 2; load++) {
+      history.commit('recorded run', capture(topology, engine));
+      engine.setTopology(topology);
+      engine.reset();
+      engine.injectFailure(target, 'crash');
+    }
+    expect(history.undoDepth).toBe(2);
+    const first = history.undo(capture(topology, engine))!;
+    expect(first).not.toBeNull();
+    apply(engine, topology, first);
+    expect(settings(engine)).toEqual([{ nodeId: target, kind: 'crash' }]);
+    const second = history.undo(capture(topology, engine))!;
+    expect(second).not.toBeNull();
+    apply(engine, topology, second);
+    expect(engine.activeFailures()).toEqual([]);
+    for (let redo = 0; redo < 2; redo++) {
+      const entry = history.redo(capture(topology, engine))!;
+      expect(entry).not.toBeNull();
+      apply(engine, topology, entry);
+      expect(settings(engine)).toEqual([{ nodeId: target, kind: 'crash' }]);
+    }
+  });
+
+  it('deep-copies saved fault options instead of retaining mutable arrays', () => {
+    const topology = makeTopology();
+    const engine = new Engine(topology);
+    engine.injectFailure(topology.nodes[1]!.id, 'partition', { edgeIds: ['cut'] });
+    const before = capture(topology, engine);
+    const history = new SessionHistory();
+    history.commit('recorded run', before);
+    before.failures![0]!.edgeIds!.push('later-edit');
+    const undo = history.undo(capture(topology, engine))!;
+    expect(undo.failures![0]!.edgeIds).toEqual(['cut']);
+  });
+
+  it('leaves ordinary config Undo and no-op skipping independent of transient faults', () => {
+    const topology = makeTopology();
+    const target = topology.nodes[1]!.id;
+    const engine = new Engine(topology);
+    const history = new SessionHistory();
+    history.commit('setting change', capture(topology, engine));
+    const edited = structuredClone(topology);
+    edited.nodes[1]!.config.capacity += 1;
+    syncEngine(engine, topology, edited);
+    engine.injectFailure(target, 'slow', { factor: 9 });
+    const undo = history.undo(capture(edited, engine))!;
+    apply(engine, edited, undo);
+    expect(settings(engine)).toEqual([{ nodeId: target, kind: 'slow', factor: 9 }]);
+    history.commit('setting change', capture(topology, engine));
+    engine.clearFailure(target);
+    expect(history.undo(capture(topology, engine))).toBeNull();
   });
 });
 

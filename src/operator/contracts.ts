@@ -180,6 +180,18 @@ export function incidentFor(state: Observation): Incident | null {
         ? `Requests are failing at ${failing.map((node) => node.label).join(', ')}`
         : 'Requests are failing in the system',
     };
+  // Reads can hide stalled writes in aggregate errors and slot utilization.
+  // Require a full second of measured lock delay, above ordinary service cost,
+  // so mild contention does not become an automatic incident.
+  const locked = state.nodes.filter(
+    (node) => hasWriteContention(node) && (node.lockWaitMs ?? 0) >= 1000,
+  );
+  if (locked.length)
+    return {
+      kind: 'overload',
+      nodeIds: locked.map((node) => node.id),
+      summary: `Writes are waiting on shared locks at ${locked.map((node) => node.label).join(', ')}`,
+    };
   return null;
 }
 export function actionsFor(state: Observation, mode: Mode): Action[] {

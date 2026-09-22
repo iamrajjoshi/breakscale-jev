@@ -15,6 +15,11 @@ import {
   type Observation,
 } from './contracts';
 import { Activity } from './Activity';
+import {
+  matchRecordedRepair,
+  RECORDED_SCENARIOS,
+  type RecordedScenario,
+} from './recordings';
 import { ACTIVITY_LIMIT, type ActivityEntry } from './activity-record';
 import { madeRecoveryProgress, MAX_STALLED_WAITS } from './wait-policy';
 import './Operator.css';
@@ -29,6 +34,8 @@ interface OperatorProps {
   onFailure: (nodeId: string, kind: 'crash' | 'slow' | null) => void;
   onConfigChange: (nodeId: string, patch: Partial<NodeConfig>) => boolean;
   onTrafficChange: (rps: number) => void;
+  onLoadScenario: (scenario: RecordedScenario) => void;
+  onDisclosureChange: () => void;
 }
 
 const RECOVERY_GOAL =
@@ -47,12 +54,15 @@ export function Operator(props: OperatorProps) {
   const fingerprint = props.snapshot
     ? decisionFingerprint(props.topology, props.snapshot)
     : '';
+  const [source, setSource] = useState<'recorded' | 'live'>('recorded');
   const [armed, setArmed] = useState(true);
   const [pending, setPending] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [phase, setPhase] = useState('connecting');
-  const [status, setStatus] = useState('Connecting JEV…');
+  const [phase, setPhase] = useState('watching');
+  const [status, setStatus] = useState(
+    'Crash or slow a service to try a recorded repair.',
+  );
   const [receipt, setReceipt] = useState('');
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [remaining, setRemaining] = useState(CALL_LIMIT);
@@ -221,6 +231,7 @@ export function Operator(props: OperatorProps) {
   }, []);
 
   useEffect(() => {
+    if (source !== 'live') return;
     const health = new AbortController();
     let checking = false;
     const check = async () => {
@@ -249,7 +260,7 @@ export function Operator(props: OperatorProps) {
       health.abort();
       clearInterval(timer);
     };
-  }, [connectionCheck]);
+  }, [connectionCheck, source]);
 
   useEffect(() => {
     const visibility = () =>
@@ -303,6 +314,19 @@ export function Operator(props: OperatorProps) {
       return;
     const observation = observe(current.topology, current.snapshot);
     const choices = actionsFor(observation, 'operator');
+    const recorded =
+      source === 'recorded'
+        ? matchRecordedRepair(observation, choices, current.topology)
+        : null;
+    if (source === 'recorded' && !recorded) {
+      needIntervention(
+        observation,
+        choices,
+        'No recorded repair matches this setup. Keep experimenting, load a recorded run, or connect live JEV.',
+        false,
+      );
+      return;
+    }
     const before = decisionFingerprint(current.topology, current.snapshot);
     const sequence = ++epoch.current;
     const abort = new AbortController();
@@ -315,18 +339,33 @@ export function Operator(props: OperatorProps) {
           startedAt: Date.now(),
           incident: incidentFor(observation)?.summary ?? 'the system',
           status: 'diagnosing' as const,
-          detail: 'JEV is choosing one repair for the current system.',
+          source,
+          recording: recorded
+            ? {
+                id: recorded.recording.id,
+                title: recorded.recording.title,
+                recordedAt: recorded.recording.recordedAt,
+                model: recorded.recording.model,
+              }
+            : undefined,
+          detail: recorded
+            ? 'Replaying a saved JEV choice for matching settings. No model request is being made.'
+            : 'JEV is choosing one repair for the current system.',
           before: { ...observation.system },
         },
         ...entries,
       ].slice(0, ACTIVITY_LIMIT),
     );
-    attempts.current.push({ id: sequence, at: Date.now() });
-    setRemaining(Math.max(0, CALL_LIMIT - attempts.current.length));
+    if (!recorded) {
+      attempts.current.push({ id: sequence, at: Date.now() });
+      setRemaining(Math.max(0, CALL_LIMIT - attempts.current.length));
+    }
     setPending(true);
     setPhase('pending');
     setStatus(
-      `JEV is diagnosing ${incidentFor(observation)?.summary ?? 'the system'}.`,
+      recorded
+        ? `Replaying: ${recorded.recording.title}.`
+        : `JEV is diagnosing ${incidentFor(observation)?.summary ?? 'the system'}.`,
     );
     const deadline = window.setTimeout(() => abort.abort(), 12000);
     let failureStatus: 'failed' | 'deferred' = 'failed';
@@ -341,46 +380,76 @@ export function Operator(props: OperatorProps) {
           previousWait: waiting.current.previous,
         },
       };
-      const response = await fetch('/api/decide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: abort.signal,
-      });
-      const body = (await response.json()) as Decision & {
+      let body: Decision & {
         attempted?: boolean;
         error?: string;
         retryAfterMs?: number;
       };
-      if (sequence !== epoch.current) return;
-      if (!response.ok) {
-        if (response.status === 429) failureStatus = 'deferred';
-        if (body.attempted === false)
-          attempts.current = attempts.current.filter((item) => item.id !== sequence);
-        if (response.status === 429 && body.callsRemaining === 0) {
-          updateActivity(sequence, {
-            status: 'deferred',
-            detail: 'The decision limit was reached. No change was applied.',
-            completedAt: Date.now(),
-          });
-          serverCooldown.current =
-            Date.now() +
-            Math.max(
-              1000,
-              Math.min(CALL_WINDOW_MS, body.retryAfterMs ?? CALL_WINDOW_MS),
-            );
-          return;
+      if (recorded) {
+        // A short, cancellable presentation step; this is not model latency.
+        await new Promise<void>((resolve, reject) => {
+          const cancel = () => {
+            clearTimeout(timer);
+            reject(new Error('Replay cancelled'));
+          };
+          const timer = window.setTimeout(() => {
+            abort.signal.removeEventListener('abort', cancel);
+            resolve();
+          }, 800);
+          abort.signal.addEventListener('abort', cancel, { once: true });
+        });
+        body = {
+          choice: recorded.action.id,
+          confidence: recorded.recording.confidence,
+          probabilities: recorded.recording.probabilities,
+          model: MODEL,
+          callsRemaining: CALL_LIMIT,
+          durationMs: 0,
+          usage: { input_tokens: 0, output_tokens: 0 },
+        };
+      } else {
+        const response = await fetch('/api/decide', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: abort.signal,
+        });
+        body = (await response.json()) as Decision & {
+          attempted?: boolean;
+          error?: string;
+          retryAfterMs?: number;
+        };
+        if (sequence !== epoch.current) return;
+        if (!response.ok) {
+          if (response.status === 429) failureStatus = 'deferred';
+          if (body.attempted === false)
+            attempts.current = attempts.current.filter((item) => item.id !== sequence);
+          if (response.status === 429 && body.callsRemaining === 0) {
+            updateActivity(sequence, {
+              status: 'deferred',
+              detail: 'The decision limit was reached. No change was applied.',
+              completedAt: Date.now(),
+            });
+            serverCooldown.current =
+              Date.now() +
+              Math.max(
+                1000,
+                Math.min(CALL_WINDOW_MS, body.retryAfterMs ?? CALL_WINDOW_MS),
+              );
+            return;
+          }
+          if (response.status === 503) {
+            connected.current = false;
+            setConfigured(false);
+          }
+          throw new Error(
+            typeof body.error === 'string' && body.error.length <= 240
+              ? body.error
+              : 'JEV could not respond',
+          );
         }
-        if (response.status === 503) {
-          connected.current = false;
-          setConfigured(false);
-        }
-        throw new Error(
-          typeof body.error === 'string' && body.error.length <= 240
-            ? body.error
-            : 'JEV could not respond',
-        );
       }
+      if (sequence !== epoch.current) return;
       const live = latest.current;
       if (
         !enabled.current ||
@@ -400,6 +469,22 @@ export function Operator(props: OperatorProps) {
         return;
       }
       const action = choices.find((item) => item.id === body.choice);
+      if (
+        recorded &&
+        matchRecordedRepair(
+          observe(live.topology, live.snapshot),
+          actionsFor(observe(live.topology, live.snapshot), 'operator'),
+          live.topology,
+        )?.recording.id !== recorded.recording.id
+      ) {
+        updateActivity(sequence, {
+          status: 'cancelled',
+          detail: 'The setup no longer matches this recording. No change was applied.',
+          completedAt: Date.now(),
+        });
+        nextAt.current = Date.now() + 500;
+        return;
+      }
       const stillAvailable = actionsFor(
         observe(live.topology, live.snapshot),
         'operator',
@@ -450,7 +535,11 @@ export function Operator(props: OperatorProps) {
         };
         setReceipt(action.label);
         setPhase('recovering');
-        setStatus('Repair applied. Watching the traffic recover.');
+        setStatus(
+          recorded
+            ? 'Recorded repair applied. Measuring this run’s traffic.'
+            : 'Repair applied. Watching the traffic recover.',
+        );
         nextAt.current = Date.now() + SETTLE_MS;
       } else {
         // No new repair is being measured after a wait or refusal.
@@ -525,7 +614,7 @@ export function Operator(props: OperatorProps) {
         setPending(false);
       }
     }
-  }, [apply, sessionId, updateActivity, resetWaiting, needIntervention]);
+  }, [apply, sessionId, updateActivity, resetWaiting, needIntervention, source]);
 
   useEffect(() => {
     const tick = () => {
@@ -541,7 +630,11 @@ export function Operator(props: OperatorProps) {
       setRemaining(available);
       if (!enabled.current) {
         setPhase('stopped');
-        setStatus('JEV is stopped. You have the controls.');
+        setStatus(
+          source === 'recorded'
+            ? 'Replays stopped. You have the controls.'
+            : 'JEV is stopped. You have the controls.',
+        );
         return;
       }
       if (live.challengeActive) {
@@ -558,18 +651,22 @@ export function Operator(props: OperatorProps) {
         );
         return;
       }
-      if (connected.current !== true) {
+      if (source === 'live' && connected.current !== true) {
         setPhase('offline');
         setStatus(
           connected.current === null
             ? 'Connecting JEV…'
-            : 'JEV is offline. You can still break and edit the system.',
+            : 'Live JEV needs a connected server. Switch to Recorded JEV to play without a key.',
         );
         return;
       }
       if (!live.snapshot || !live.topology.nodes.length) {
         setPhase('watching');
-        setStatus('Add components and connect them. JEV will watch the traffic.');
+        setStatus(
+          source === 'recorded'
+            ? 'Load a recorded run, or build your own system.'
+            : 'Add components and connect them. JEV will watch the traffic.',
+        );
         return;
       }
       if (controller.current) return;
@@ -607,7 +704,11 @@ export function Operator(props: OperatorProps) {
       if (!incident) {
         resetWaiting();
         setPhase('watching');
-        setStatus('Change traffic or edit a component. JEV watches for trouble.');
+        setStatus(
+          source === 'recorded'
+            ? 'Crash or slow a service. Matching saved repairs run here, with fresh traffic.'
+            : 'Change traffic or edit a component. JEV watches for trouble.',
+        );
         return;
       }
       const choices = actionsFor(observation, 'operator');
@@ -639,7 +740,7 @@ export function Operator(props: OperatorProps) {
         );
         return;
       }
-      if (available <= 0) {
+      if (source === 'live' && available <= 0) {
         const readyAt = Math.max(
           serverCooldown.current,
           attempts.current.length >= CALL_LIMIT
@@ -675,7 +776,7 @@ export function Operator(props: OperatorProps) {
     tick();
     const timer = window.setInterval(tick, 250);
     return () => clearInterval(timer);
-  }, [request, updateActivity, resetWaiting, recoveryKey, needIntervention]);
+  }, [request, updateActivity, resetWaiting, recoveryKey, needIntervention, source]);
 
   const target =
     props.topology.nodes.find(
@@ -710,20 +811,56 @@ export function Operator(props: OperatorProps) {
       data-chrome="operator"
       data-armed={armed}
       data-pending={pending}
+      data-source={source}
       onKeyDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        if (event.target instanceof Element && event.target.closest('summary'))
+          props.onDisclosureChange();
+      }}
     >
       <div className="operator-heading">
         <span className="operator-watch">
           <i data-state={phase} aria-hidden="true" />
-          JEV {armed ? (phase === 'needs-help' ? 'needs help' : 'on watch') : 'stopped'}
+          <select
+            aria-label="Repair source"
+            data-testid="operator-source"
+            className="operator-source"
+            value={source}
+            onChange={(event) => {
+              invalidate(500, 'Repair source changed. This decision was not applied.');
+              interruptMeasurement(
+                'Repair source changed before measurement completed.',
+              );
+              resetWaiting();
+              retryMessage.current = '';
+              errorCount.current = 0;
+              setReceipt('');
+              connected.current = null;
+              setConfigured(null);
+              setSource(event.target.value === 'live' ? 'live' : 'recorded');
+            }}
+          >
+            <option value="recorded">Recorded JEV</option>
+            <option value="live">Live JEV</option>
+          </select>
         </span>
         <span
           className="operator-budget num"
           data-testid="operator-budget"
-          title="At most 18 attempted decisions per rolling minute. Healthy systems make no model calls; cooldown resumes automatically."
+          title={
+            source === 'recorded'
+              ? 'Saved JEV decisions run locally. No model requests.'
+              : 'At most 18 attempted decisions per rolling minute. Healthy systems make no model calls.'
+          }
         >
-          {CALL_LIMIT - remaining}/{CALL_LIMIT}
-          <span className="operator-budget-label"> this minute</span>
+          {source === 'recorded' ? (
+            'No key needed'
+          ) : (
+            <>
+              {CALL_LIMIT - remaining}/{CALL_LIMIT}
+              <span className="operator-budget-label"> this minute</span>
+            </>
+          )}
         </span>
         <button
           type="button"
@@ -741,7 +878,13 @@ export function Operator(props: OperatorProps) {
             );
           }}
         >
-          {armed ? 'Stop JEV' : 'Resume JEV'}
+          {source === 'recorded'
+            ? armed
+              ? 'Stop replay'
+              : 'Resume replay'
+            : armed
+              ? 'Stop JEV'
+              : 'Resume JEV'}
         </button>
       </div>
       <div className="operator-chaos-controls" aria-label="Break the system">
@@ -809,7 +952,7 @@ export function Operator(props: OperatorProps) {
             Retry JEV
           </button>
         )}
-        {configured === false && (
+        {source === 'live' && configured === false && (
           <button
             type="button"
             className="btn btn-sm"
@@ -829,7 +972,48 @@ export function Operator(props: OperatorProps) {
           {receipt}
         </p>
       )}
-      <Activity entries={activity} />
+      {source === 'recorded' && (
+        <details className="operator-recordings" data-testid="operator-recordings">
+          <summary>Recorded runs</summary>
+          <div className="operator-recording-list">
+            <p>
+              Load a captured setup, then change it yourself. Loading replaces the
+              canvas; Undo brings it back. Only matching saved choices replay. Results
+              below are measured from your run.
+            </p>
+            {RECORDED_SCENARIOS.map((scenario) => (
+              <button
+                type="button"
+                className="operator-recording"
+                key={scenario.id}
+                data-testid={`recording-scenario-${scenario.id}`}
+                disabled={props.challengeActive}
+                onClick={(event) => {
+                  invalidate(
+                    500,
+                    'A recorded run was loaded. This decision was not applied.',
+                  );
+                  interruptMeasurement('A recorded run replaced the system.');
+                  resetWaiting();
+                  setReceipt('');
+                  enabled.current = true;
+                  setArmed(true);
+                  props.onLoadScenario(scenario);
+                  const details = event.currentTarget.closest('details');
+                  if (details) {
+                    details.open = false;
+                    details.querySelector('summary')?.focus();
+                  }
+                }}
+              >
+                <span>{scenario.title}</span>
+                <small>{scenario.description}</small>
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+      <Activity entries={activity} source={source} />
     </section>
   );
 }

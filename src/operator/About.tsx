@@ -67,8 +67,9 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
       <p id="operator-about-intro">
         breakscale-jev adds automatic JEV repair to Breakscale, the system-design
         simulator by xevrion and contributors. Turn up traffic, crash a service, slow a
-        database, or change a component’s settings. JEV watches for trouble and tries to
-        repair it while the simulation keeps running.
+        database, or change a component’s settings. Recorded JEV lets you try saved
+        repairs without a key. Live JEV can choose new repairs when connected to a
+        server.
       </p>
       <h3>You cause the incident</h3>
       <p>
@@ -76,23 +77,33 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         of the canvas. The components, connections and Inspector are editable. Open an
         example from the menu to try a different architecture.
       </p>
-      <h3>JEV tries to recover</h3>
+      <h3>Play without a key</h3>
       <p>
-        Automatic repair starts when JEV is connected. Each decision uses the current
-        faults, queues, throughput and latency. The app applies one supported repair,
-        then gives the system time to respond. Watch the next measurement to see whether
-        it helped. Open Activity to see each chosen action, whether it was applied, and
-        its before-and-after measurements. The latest 50 attempts stay here until you
-        reload. If no supported repair is available, or repeated waiting makes no
-        progress, JEV explains that it needs help. Stop JEV whenever you want to
-        experiment on your own.
+        Recorded JEV is on by default. Crash or slow a service, or open Recorded runs to
+        load a captured incident. Real JEV choices are saved with the app and reused
+        only when the system settings and damage match. You can still edit the canvas; a
+        setup outside the recordings needs your intervention or live JEV. This is a
+        replay of a decision, not a model running in your browser.
+      </p>
+      <h3>Watch what actually changed</h3>
+      <p>
+        The simulation runs fresh traffic after every repair, including replays. Live
+        JEV uses the current faults, queues, throughput and latency to choose new
+        actions. The app applies one supported repair, then gives the system time to
+        respond. Watch the next measurement to see whether it helped. Open Activity to
+        see each chosen action, whether it was applied, and its before-and-after
+        measurements. The latest 50 attempts stay here until you reload. If no supported
+        repair is available, or repeated waiting makes no progress, JEV explains that it
+        needs help. Stop JEV whenever you want to experiment on your own. Activity
+        labels recorded choices with their capture date.
       </p>
       <p className="operator-about-limit">
         Breakscale computes the traffic and timing. JEV chooses from a bounded repair
         menu; it doesn’t invent simulation results or lower traffic to hide a problem.
         Some architectures and loads exceed those controls. The local demo has a visible
         call limit, pauses decisions with the simulation, and disables JEV during
-        challenges. Manual controls work without an API key.
+        challenges. Recorded runs and manual controls work without an API key or
+        backend.
       </p>
       <footer className="operator-about-credit">
         Built on{' '}

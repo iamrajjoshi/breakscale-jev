@@ -1,4 +1,5 @@
-import type { Topology } from './sim/types';
+import type { ActiveFailure, Topology } from './sim/types';
+import type { Engine } from './sim/engine';
 
 /* ------------------------------------------------------------------ *
  * Undo / redo for the shell.
@@ -30,6 +31,8 @@ export interface HistorySnapshot {
   selectedIds: ReadonlySet<string>;
   rps: number;
   presetId: string | null;
+  /** Run faults are restored only across an explicit recorded-run load. */
+  failures?: ActiveFailure[];
 }
 
 /**
@@ -156,6 +159,7 @@ function cloneSnapshot(s: HistorySnapshot): HistorySnapshot {
     selectedIds: new Set(s.selectedIds),
     rps: s.rps,
     presetId: s.presetId,
+    ...(s.failures === undefined ? {} : { failures: structuredClone(s.failures) }),
   };
 }
 
@@ -321,7 +325,9 @@ export class SessionHistory {
     this.flushSettling();
     while (this.past.length > 0) {
       const entry = this.past.pop()!;
-      if (snapshotEqual(entry, current)) continue;
+      // Loading a run resets/reinjects faults even when its diagram is identical.
+      // Ordinary edits still ignore transient faults and skip true no-ops.
+      if (entry.label !== 'recorded run' && snapshotEqual(entry, current)) continue;
       this.future.push({ label: entry.label, ...cloneSnapshot(current) });
       this.notify();
       return entry;
@@ -335,7 +341,7 @@ export class SessionHistory {
     this.flushSettling();
     while (this.future.length > 0) {
       const entry = this.future.pop()!;
-      if (snapshotEqual(entry, current)) continue;
+      if (entry.label !== 'recorded run' && snapshotEqual(entry, current)) continue;
       this.pushPast({ label: entry.label, ...cloneSnapshot(current) });
       this.notify();
       return entry;
@@ -346,6 +352,20 @@ export class SessionHistory {
 }
 
 /* ---------------- engine synchronisation ---------------- */
+
+/** Restore a run's faults without rewinding its clock or pretending to undo traffic. */
+export function restoreRunFailures(
+  engine: Pick<Engine, 'activeFailures' | 'clearFailure' | 'injectFailure'>,
+  failures: ActiveFailure[],
+): void {
+  for (const failure of engine.activeFailures()) engine.clearFailure(failure.nodeId);
+  for (const failure of failures)
+    engine.injectFailure(failure.nodeId, failure.kind, {
+      factor: failure.factor,
+      rate: failure.rate,
+      edgeIds: failure.edgeIds,
+    });
+}
 
 /** The two mutation paths the engine offers, and nothing else. */
 export interface EngineLike {

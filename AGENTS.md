@@ -28,7 +28,9 @@ The app uses port 4176 and browser tests use 4186. `npm start` serves the built 
 - Respect the finite repair catalog. Do not lower demand, erase modeled lock costs, fabricate results or claim to repair missing topology. Preserve the three-stalled-wait guard and explicit intervention outcomes.
 - Preserve upstream licenses, manual editing and challenge restrictions. Add no database, cloud backend, arbitrary tool execution or model-written simulation code.
 
-Database write-lock contention is shared across instances. The existing contention guard prunes ineffective database growth after an incident is detected; it does not detect every severe lock incident. Keep the pending detection gap in PROJECT.md explicit until a regression reproduces it and a fix passes.
+Database write-lock contention is shared across instances. Preserve direct detection of active lock wait above service time and at least one second after warmup, including the real-engine low-error/zero-queue regression. The contention guard prunes ineffective database growth; it does not repair the workload.
+
+Recorded JEV is the default. Match the captured configuration, demand, damage and legal action conservatively; never invent a saved model decision or substitute historical metrics for a fresh measurement. Recorded mode must make no health or inference requests. Source changes cancel pending work and retain live budgets. Keep sanitized synthetic recordings in source and full provider receipts private.
 
 Keep the canvas primary and the repair bar visible. Verify engine state changes, repeated damage, cancellation, Undo, keyboard focus and narrow layouts. An Activity entry must distinguish chosen, applied and measured states. Do not treat model confidence as measured recovery, or a live smoke as a controller benchmark.
 

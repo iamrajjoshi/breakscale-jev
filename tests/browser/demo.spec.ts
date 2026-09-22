@@ -25,6 +25,7 @@ async function openDemo(page: Page): Promise<void> {
     route.fulfill({ json: { stargazers_count: 0 } }),
   );
   await page.goto('/');
+  await page.getByTestId('operator-stop').click();
   await expect(page.locator('.cv-node').first()).toBeVisible();
   await expect(page.getByTestId('operator-status')).toBeVisible();
 }

@@ -20,7 +20,9 @@
     "test:live": "tsx scripts/live-smoke.ts",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "test:live:design": "tsx scripts/design-live-smoke.ts",
-    "test:live:recovery": "tsx scripts/autopilot-live-smoke.ts"
+    "test:live:recovery": "tsx scripts/autopilot-live-smoke.ts",
+    "record:repairs": "tsx scripts/record-repairs.ts",
+    "test:recordings": "npm run build && PLAYWRIGHT_STATIC=1 playwright test tests/browser/recordings.spec.ts"
   },
   "dependencies": {
     "lucide-react": "1.41.0",
