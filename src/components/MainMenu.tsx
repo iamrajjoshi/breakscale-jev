@@ -64,14 +64,11 @@ export function MainMenu({ open, onClose, items }: MainMenuProps) {
         onClose();
       }
     };
-    // Deferred a frame: the pointerdown that OPENED the menu would otherwise
-    // be the one that closes it.
-    const t = window.setTimeout(() => {
-      document.addEventListener('pointerdown', onDown);
-      document.addEventListener('keydown', onKey);
-    }, 0);
+    // The opener runs on click, after its pointerdown. Install immediately so
+    // Escape also works before the next frame, including after a parent render.
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
     return () => {
-      window.clearTimeout(t);
       document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
     };

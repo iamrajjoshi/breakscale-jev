@@ -62,9 +62,7 @@ export function Operator(props: OperatorProps) {
   const [canRetry, setCanRetry] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [phase, setPhase] = useState('watching');
-  const [status, setStatus] = useState(
-    'Crash or slow a service to try a recorded repair.',
-  );
+  const [status, setStatus] = useState('Watching for faults.');
   const [receipt, setReceipt] = useState('');
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [remaining, setRemaining] = useState(CALL_LIMIT);
@@ -218,17 +216,26 @@ export function Operator(props: OperatorProps) {
     const element = dock.current;
     const owner = element?.closest<HTMLElement>('.app-body');
     if (!element || !owner) return;
-    const measure = () =>
+    const controlHead = element.querySelector<HTMLElement>('.operator-control-head');
+    const measure = () => {
       owner.style.setProperty(
         '--operator-height',
         `${element.getBoundingClientRect().height}px`,
       );
+      if (controlHead)
+        element.style.setProperty(
+          '--operator-control-height',
+          `${controlHead.getBoundingClientRect().height}px`,
+        );
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (controlHead) observer.observe(controlHead);
     return () => {
       observer.disconnect();
       owner.style.removeProperty('--operator-height');
+      element.style.removeProperty('--operator-control-height');
     };
   }, []);
 
@@ -708,8 +715,8 @@ export function Operator(props: OperatorProps) {
         setPhase('watching');
         setStatus(
           source === 'recorded'
-            ? 'Crash or slow a service. Matching saved repairs run here, with fresh traffic.'
-            : 'Change traffic or edit a component. JEV watches for trouble.',
+            ? 'Ready to replay a matching repair.'
+            : 'Ready to choose a repair.',
         );
         return;
       }
@@ -854,96 +861,91 @@ export function Operator(props: OperatorProps) {
           props.onDisclosureChange();
       }}
     >
-      <div className="operator-intro">
-        <h2>Break something.</h2>
-        <p>Cause an outage. Watch JEV repair it.</p>
-      </div>
-      <div className="operator-heading">
-        <span className="operator-watch">
-          <i data-state={phase} aria-hidden="true" />
-          <select
-            aria-label="Repair source"
-            data-testid="operator-source"
-            className="operator-source"
-            value={source}
-            onChange={(event) => {
-              invalidate(500, 'Repair source changed. This decision was not applied.');
-              interruptMeasurement(
-                'Repair source changed before measurement completed.',
-              );
-              resetWaiting();
-              retryMessage.current = '';
-              errorCount.current = 0;
-              setReceipt('');
-              connected.current = null;
-              setConfigured(null);
-              setSource(event.target.value === 'live' ? 'live' : 'recorded');
-            }}
-          >
-            <option value="recorded">Recorded JEV</option>
-            <option value="live">Live JEV</option>
-          </select>
-        </span>
-        <span
-          className="operator-budget num"
-          data-testid="operator-budget"
-          title={
-            source === 'recorded'
-              ? 'Saved JEV decisions run locally. No model requests.'
-              : 'At most 18 attempted decisions per rolling minute. Healthy systems make no model calls.'
-          }
-        >
-          {source === 'recorded' ? (
-            'No key'
-          ) : (
-            <>
-              {CALL_LIMIT - remaining}/{CALL_LIMIT}
-              <span className="operator-budget-label"> this minute</span>
-            </>
-          )}
-        </span>
-        <button
-          type="button"
-          className="btn btn-sm operator-toggle"
-          data-testid={armed ? 'operator-stop' : 'operator-toggle'}
-          onClick={() => {
-            enabled.current = !enabled.current;
-            setArmed(enabled.current);
-            if (enabled.current) resetWaiting();
-            invalidate(
-              0,
-              enabled.current
-                ? 'JEV was restarted before this decision could be applied.'
-                : 'JEV was stopped before this decision could be applied.',
-            );
-          }}
-        >
-          {source === 'recorded'
-            ? armed
-              ? 'Stop replay'
-              : 'Resume replay'
-            : armed
-              ? 'Stop JEV'
-              : 'Resume JEV'}
-        </button>
-      </div>
-      {source === 'recorded' && outage && (
-        <div className="operator-primary">
+      <div className="operator-control-head">
+        <div className="operator-heading">
+          <h2>Recovery</h2>
           <button
             type="button"
-            className="btn operator-try-outage"
-            data-testid="operator-try-outage"
-            disabled={props.challengeActive}
-            onClick={() => loadScenario(outage)}
+            className="btn btn-sm operator-toggle"
+            data-testid={armed ? 'operator-stop' : 'operator-toggle'}
+            onClick={() => {
+              enabled.current = !enabled.current;
+              setArmed(enabled.current);
+              if (enabled.current) resetWaiting();
+              invalidate(
+                0,
+                enabled.current
+                  ? 'JEV was restarted before this decision could be applied.'
+                  : 'JEV was stopped before this decision could be applied.',
+              );
+            }}
           >
-            Try a full outage
+            {source === 'recorded'
+              ? armed
+                ? 'Stop replay'
+                : 'Resume replay'
+              : armed
+                ? 'Stop JEV'
+                : 'Resume JEV'}
           </button>
-          <p>Loads a demo. Undo restores your canvas.</p>
         </div>
-      )}
+        <fieldset
+          className="operator-source"
+          data-testid="operator-source"
+          aria-describedby="operator-source-note"
+        >
+          <legend className="sr-only">Repair source</legend>
+          {(['recorded', 'live'] as const).map((value) => (
+            <label className="operator-source-option" key={value}>
+              <input
+                type="radio"
+                name="repair-source"
+                value={value}
+                checked={source === value}
+                data-testid={`source-${value}`}
+                onChange={() => {
+                  invalidate(
+                    500,
+                    'Repair source changed. This decision was not applied.',
+                  );
+                  interruptMeasurement(
+                    'Repair source changed before measurement completed.',
+                  );
+                  resetWaiting();
+                  retryMessage.current = '';
+                  errorCount.current = 0;
+                  setReceipt('');
+                  connected.current = null;
+                  setConfigured(null);
+                  setSource(value);
+                }}
+              />
+              <span>{value === 'recorded' ? 'Recorded' : 'Live'}</span>
+            </label>
+          ))}
+        </fieldset>
+        <p className="operator-source-note" id="operator-source-note">
+          <span>
+            {source === 'recorded' ? 'Saved JEV decisions.' : 'New JEV decisions.'}
+          </span>
+          <span
+            className="operator-budget"
+            data-testid="operator-budget"
+            title={
+              source === 'recorded'
+                ? 'Saved JEV decisions run locally. No model requests.'
+                : 'At most 18 attempted decisions per rolling minute. Healthy systems make no model calls.'
+            }
+          >
+            {source === 'recorded'
+              ? 'No API key needed'
+              : `${CALL_LIMIT - remaining}/${CALL_LIMIT} this minute`}
+          </span>
+        </p>
+      </div>
       <p className="operator-target">
-        Select a component to target it. Crash and slowdown affect{' '}
-        <strong>{target?.label ?? 'a selected service'}</strong>
+        <span>Target</span>
+        <strong>{target?.label ?? 'Select a component'}</strong>
       </p>
       <div className="operator-chaos-controls" aria-label="Break the system">
         <button
@@ -990,6 +992,7 @@ export function Operator(props: OperatorProps) {
       </div>
       <div className="operator-feedback" data-state={phase}>
         <p className="operator-phase-label">
+          <i className="operator-state-dot" aria-hidden="true" />
           {phaseLabel[phase] ?? 'Watching the system'}
         </p>
         <div className="operator-footer">
@@ -1036,20 +1039,36 @@ export function Operator(props: OperatorProps) {
           {receipt}
         </p>
       )}
-      <button
-        type="button"
-        className="btn btn-sm operator-explore-toggle"
-        data-testid="operator-explore-toggle"
-        aria-expanded={exploreOpen}
-        aria-controls="operator-explore"
-        onClick={() => {
-          setExploreOpen((open) => !open);
-          props.onDisclosureChange();
-        }}
-      >
-        <span>{exploreOpen ? 'Close details' : 'Runs & activity'}</span>
-        <span aria-hidden="true">{exploreOpen ? '−' : '+'}</span>
-      </button>
+      <div className="operator-demo-actions">
+        {source === 'recorded' && outage && (
+          <div className="operator-primary">
+            <button
+              type="button"
+              className="btn operator-try-outage"
+              data-testid="operator-try-outage"
+              disabled={props.challengeActive}
+              onClick={() => loadScenario(outage)}
+            >
+              Load outage demo
+            </button>
+            <p>Six recorded repairs. Undo restores your canvas.</p>
+          </div>
+        )}
+        <button
+          type="button"
+          className="btn btn-sm operator-explore-toggle"
+          data-testid="operator-explore-toggle"
+          aria-expanded={exploreOpen}
+          aria-controls="operator-explore"
+          onClick={() => {
+            setExploreOpen((open) => !open);
+            props.onDisclosureChange();
+          }}
+        >
+          <span>{exploreOpen ? 'Close details' : 'Runs & activity'}</span>
+          <span aria-hidden="true">{exploreOpen ? '−' : '+'}</span>
+        </button>
+      </div>
       <div className="operator-explore" id="operator-explore">
         {source === 'recorded' && (
           <details className="operator-recordings" data-testid="operator-recordings">

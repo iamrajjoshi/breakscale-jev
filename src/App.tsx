@@ -208,6 +208,15 @@ function isPhone(): boolean {
   return window.matchMedia(PHONE_QUERY).matches;
 }
 
+/** Fresh demos use the taller canvas; saved diagrams keep their authored layout. */
+function layoutFreshDemo(topology: Topology): Topology {
+  const portrait =
+    typeof window !== 'undefined' &&
+    window.innerWidth >= 1100 &&
+    window.innerHeight - 200 > (window.innerWidth - 320) * 1.05;
+  return layoutDemo(topology, isPhone(), portrait);
+}
+
 /** Server snapshot: no window, so never the phone layout. */
 function isPhoneServer(): boolean {
   return false;
@@ -518,7 +527,7 @@ interface Session {
 
 function loadSession(): Session {
   const fallback: Session = {
-    topology: layoutDemo(STARTER_TOPOLOGY, isPhone()),
+    topology: layoutFreshDemo(STARTER_TOPOLOGY),
     rps: clientRps(STARTER_TOPOLOGY),
     presetId: null,
   };
@@ -2177,7 +2186,7 @@ export default function App() {
 
   const handleLoadRecording = useCallback(
     (scenario: RecordedScenario) => {
-      replaceDesign(layoutDemo(scenario.topology, isPhone()), null, 'recorded run');
+      replaceDesign(layoutFreshDemo(scenario.topology), null, 'recorded run');
       setChallengeId(null);
       for (const failure of scenario.failures ?? []) {
         engine.injectFailure(
@@ -2195,7 +2204,7 @@ export default function App() {
   );
 
   const handleLoadStarter = useCallback(() => {
-    replaceDesign(layoutDemo(STARTER_TOPOLOGY, isPhone()), null, 'starter load');
+    replaceDesign(layoutFreshDemo(STARTER_TOPOLOGY), null, 'starter load');
     setChallengeId(null);
     setOperatorResetEpoch((value) => value + 1);
     runningRef.current = true;
@@ -2805,16 +2814,11 @@ export default function App() {
       <header className="app-bar" ref={barRef} aria-label="System controls">
         <div className="playground-identity">
           <span className="playground-brand" data-testid="playground-brand">
-            <svg viewBox="0 0 28 22" aria-hidden="true">
-              <path d="M6 11h16M14 5v12" />
-              <rect x="1" y="7" width="8" height="8" rx="2" />
-              <rect x="10" y="1" width="8" height="8" rx="2" />
-              <rect x="19" y="7" width="8" height="8" rx="2" />
-              <rect x="10" y="13" width="8" height="8" rx="2" />
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="playground-mark">
+              <path d="M6 3v16h7a6 6 0 0 0 0-12h-3" />
             </svg>
             breakscale-jev
           </span>
-          <span className="playground-tagline">A system you can break.</span>
         </div>
         <div className="app-island app-island-load">
           <TrafficControl

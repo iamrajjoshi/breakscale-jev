@@ -59,7 +59,7 @@ async function open(page: Page) {
   await seedSimpleSystem(page);
   await page.goto('/');
   await expect(page.locator('.cv-node')).toHaveCount(3);
-  await page.getByTestId('operator-source').selectOption('live');
+  await page.getByRole('radio', { name: 'Live', exact: true }).check();
   await expect(dock(page)).toHaveAttribute('data-armed', 'true');
   await expect(status(page)).toBeVisible();
 }

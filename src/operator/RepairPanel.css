@@ -1,100 +1,116 @@
-/* Presentation inside the repair rail. Operator.css owns its outer geometry. */
-.operator-intro {
-  margin-bottom: var(--sp-5);
-}
-
-.operator-intro h2 {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-num);
-  letter-spacing: var(--tr-lg);
-  line-height: 1.2;
-}
-
-.operator-intro p {
-  margin: 0;
-  color: var(--text-dim);
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  max-width: 32ch;
-}
-
-.operator-dock .operator-heading {
+/* Recovery controls share the editor's type scale and neutral surfaces. */
+.operator-control-head {
   position: sticky;
-  z-index: 3;
   top: 0;
-  gap: var(--sp-1);
-  flex-wrap: nowrap;
+  z-index: 3;
+  padding-bottom: var(--sp-3);
   background: var(--surface);
 }
 
-.operator-dock .operator-watch {
-  flex-shrink: 0;
-  gap: var(--sp-1);
-  min-width: 0;
-  margin-right: auto;
+.operator-dock .operator-heading {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  margin-bottom: var(--sp-4);
+}
+
+.operator-heading h2 {
+  margin: 0;
+  font-size: var(--fs-num);
+  font-weight: var(--fw-num);
+  letter-spacing: var(--tr-base);
+}
+
+.operator-dock .operator-toggle {
+  min-height: 32px;
+  padding-inline: var(--sp-2);
   font-size: var(--fs-sm);
 }
 
 .operator-dock .operator-source {
-  min-width: 128px;
-  border-color: var(--border-strong);
-  padding-inline: var(--sp-1);
-  background: var(--surface);
-  appearance: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 3px;
+  border: var(--bw) solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
 }
 
-.operator-dock .operator-budget {
-  font-size: var(--fs-label);
-}
-
-.operator-dock .operator-toggle {
-  padding-inline: var(--sp-1);
-}
-
-.operator-primary {
-  margin: var(--sp-3) 0;
-}
-
-.operator-dock .operator-try-outage {
-  width: 100%;
-  min-height: 44px;
+.operator-source-option {
+  position: relative;
   display: flex;
+  min-width: 0;
+  min-height: 32px;
+  align-items: center;
   justify-content: center;
-  gap: var(--sp-3);
-  padding-inline: var(--sp-3);
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-size: var(--fs-base);
-  font-weight: var(--fw-med);
-}
-
-.operator-dock .operator-try-outage:hover:not(:disabled) {
-  border-color: var(--accent-ink);
-  background: var(--surface);
-}
-
-.operator-primary p,
-.operator-target {
-  margin: var(--sp-1) 0 0;
+  border-radius: var(--r-sm);
   color: var(--text-dim);
-  font-size: var(--fs-label);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-med);
+  cursor: pointer;
+}
+
+.operator-source-option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.operator-source-option:has(input:checked) {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px light-dark(#20252c1a, #00000033);
+}
+
+.operator-source-option:hover {
+  color: var(--text);
+}
+
+.operator-source-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.operator-source-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--sp-1);
+  margin: var(--sp-2) 0 0;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 
+.operator-dock .operator-budget {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
 .operator-target {
-  margin-top: var(--sp-2);
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-2);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .operator-target strong {
-  font-weight: var(--fw-med);
   color: var(--text);
+  font-weight: var(--fw-med);
 }
 
 .operator-dock .operator-chaos-controls {
-  margin-top: var(--sp-2);
+  margin: 0;
   gap: var(--sp-1);
 }
 
@@ -103,36 +119,50 @@
   font-size: var(--fs-sm);
 }
 
+.operator-dock .operator-wreck {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
 .operator-feedback {
-  margin-top: var(--sp-4);
-  padding-left: var(--sp-3);
-  border-left: 2px solid var(--ok);
-}
-
-.operator-feedback[data-state='pending'],
-.operator-feedback[data-state='recovering'],
-.operator-feedback[data-state='observing'] {
-  border-color: var(--warn);
-}
-
-.operator-feedback[data-state='needs-help'],
-.operator-feedback[data-state='error'],
-.operator-feedback[data-state='offline'] {
-  border-color: var(--danger);
-}
-
-.operator-feedback[data-state='stopped'],
-.operator-feedback[data-state='paused'],
-.operator-feedback[data-state='cooldown'] {
-  border-color: var(--text-faint);
+  margin-top: var(--sp-5);
 }
 
 .operator-phase-label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   margin: 0;
   color: var(--text);
   font-size: var(--fs-sm);
   font-weight: var(--fw-med);
   line-height: 1.5;
+}
+
+.operator-state-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.operator-feedback[data-state='pending'] .operator-state-dot,
+.operator-feedback[data-state='recovering'] .operator-state-dot,
+.operator-feedback[data-state='observing'] .operator-state-dot {
+  background: var(--warn);
+}
+
+.operator-feedback[data-state='needs-help'] .operator-state-dot,
+.operator-feedback[data-state='error'] .operator-state-dot,
+.operator-feedback[data-state='offline'] .operator-state-dot {
+  background: var(--danger);
+}
+
+.operator-feedback[data-state='stopped'] .operator-state-dot,
+.operator-feedback[data-state='paused'] .operator-state-dot,
+.operator-feedback[data-state='cooldown'] .operator-state-dot {
+  background: var(--text-faint);
 }
 
 .operator-dock .operator-footer {
@@ -141,7 +171,40 @@
 
 .operator-dock .operator-receipt {
   margin-top: var(--sp-2);
-  font-size: var(--fs-label);
+  font-size: var(--fs-sm);
+}
+
+.operator-demo-actions {
+  display: contents;
+}
+
+.operator-primary {
+  margin: var(--sp-5) 0 0;
+  padding-top: var(--sp-4);
+  border-top: var(--bw) solid var(--border);
+}
+
+.operator-dock .operator-try-outage {
+  width: 100%;
+  min-height: 36px;
+  justify-content: center;
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-med);
+}
+
+.operator-dock .operator-try-outage:hover:not(:disabled) {
+  background: var(--text-dim);
+  border-color: var(--text-dim);
+}
+
+.operator-primary p {
+  margin: var(--sp-2) 0 0;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
 
 .operator-explore {
@@ -153,8 +216,8 @@
 }
 
 .operator-dock .operator-recordings {
-  margin-top: var(--sp-4);
-  border-top: var(--bw) solid var(--border);
+  margin-top: var(--sp-3);
+  border-top: 0;
 }
 
 .operator-dock .operator-recordings > summary {
@@ -186,10 +249,6 @@
 }
 
 @media (min-width: 1100px) {
-  .operator-dock .operator-budget-label {
-    display: none;
-  }
-
   .operator-explore {
     display: flex;
     flex: 1;
@@ -202,41 +261,60 @@
 }
 
 @media (max-width: 1099px) {
+  .operator-control-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 var(--sp-2);
+    padding-bottom: var(--sp-1);
+  }
+
   .operator-dock .operator-heading {
-    gap: var(--sp-1);
+    display: contents;
+  }
+
+  .operator-heading h2 {
+    display: none;
   }
 
   .operator-dock .operator-source {
-    min-height: 32px;
-    font-size: var(--fs-sm);
+    grid-area: 1 / 1;
   }
 
   .operator-dock .operator-toggle {
-    min-height: 32px;
-    padding-inline: var(--sp-1);
+    grid-area: 1 / 2;
+    align-self: center;
+  }
+
+  .operator-source-note {
+    grid-column: 1 / -1;
+  }
+
+  .operator-demo-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+  }
+
+  .operator-dock[data-explore-open='false']
+    .operator-demo-actions:has(.operator-primary) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   }
 
   .operator-primary {
-    margin: var(--sp-1) 0;
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 
-  .operator-dock .operator-try-outage {
-    min-height: 32px;
-    padding-inline: var(--sp-2);
-    font-size: var(--fs-sm);
-  }
-
-  .operator-dock .operator-chaos-controls {
-    margin-top: var(--sp-1);
-  }
-
+  .operator-dock .operator-try-outage,
   .operator-dock .operator-chaos-controls .btn {
     min-height: 32px;
   }
 
   .operator-feedback {
     margin-top: var(--sp-2);
-    padding-left: var(--sp-2);
   }
 
   .operator-dock .operator-explore-toggle {
@@ -244,14 +322,14 @@
     justify-content: space-between;
     width: 100%;
     min-height: 28px;
-    margin-top: var(--sp-1);
+    margin-top: 0;
     padding-inline: var(--sp-1);
     border-color: transparent;
     background: transparent;
     font-weight: var(--fw-med);
   }
 
-  .operator-dock[data-explore-open='false'] .operator-intro,
+  .operator-dock[data-explore-open='false'] .operator-source-note,
   .operator-dock[data-explore-open='false'] .operator-target,
   .operator-dock[data-explore-open='false'] .operator-primary p,
   .operator-dock[data-explore-open='false'] .operator-receipt,
@@ -261,17 +339,14 @@
   }
 
   .operator-dock[data-explore-open='false'] .operator-status {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .operator-dock[data-explore-open='false'] .operator-footer {
     margin-top: 0;
-  }
-
-  .operator-dock[data-explore-open='true'] .operator-intro {
-    margin-bottom: var(--sp-3);
   }
 
   .operator-dock .operator-recording-list {
@@ -285,7 +360,7 @@
 }
 
 @media (pointer: coarse) {
-  .operator-dock .operator-source,
+  .operator-source-option,
   .operator-dock .operator-toggle,
   .operator-dock .operator-try-outage,
   .operator-dock .operator-chaos-controls .btn,

@@ -284,7 +284,7 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 /** One keyboard or button zoom step. Shared so the two cannot drift. */
 const ZOOM_STEP = 1.25;
-/** Below this the body numbers and sparkline drop. */
+/** Below this the secondary numbers and sparkline drop. */
 const DETAIL_ZOOM = 0.7;
 /** Below this only the name, health rule and meter survive. */
 const MINIMAL_ZOOM = 0.5;
@@ -2588,7 +2588,7 @@ interface NodeViewProps {
   stats: NodeStats | null;
   spark: ArrayLike<number> | undefined;
   selected: boolean;
-  /** 2 = full, 1 = header + meter only, 0 = name + meter. */
+  /** 2 = full, 1 = header + primary readout + meter, 0 = name + meter. */
   detail: 0 | 1 | 2;
   /** Role in the link gesture currently in flight, if any. */
   linkRole: LinkRole;
@@ -2956,30 +2956,29 @@ const NodeView = memo(function NodeView({
         </text>
       )}
 
+      {/* Keep the headline readable at mid zoom; only secondary detail drops.
+          Its existing width budget reserves the sparkline/vessel/side-cell slot
+          at full detail and respects the selected font bump. */}
+      {showHeader && readout && (
+        <text
+          className="cv-node-primary"
+          x={PAD_X}
+          y={52}
+          {...fitPrimary(
+            readout.primary.value,
+            readout.primary.label,
+            selected && structure !== 'strip',
+          )}
+        >
+          <tspan className="cv-val">{readout.primary.value}</tspan>
+          <tspan className="cv-cap" dx={4}>
+            {readout.primary.label}
+          </tspan>
+        </text>
+      )}
+
       {full && readout && (
         <>
-          {/* The primary is width-guarded like every other cell: it shares
-              its row with the sparkline / vessel (or, on strip kinds, the
-              side cell), and an unguarded value was measured 13px inside the
-              sparkline at a six-figure queue depth. Strip kinds never take
-              the selected font bump (see has-strip above), so their fit is
-              computed at the base size. */}
-          <text
-            className="cv-node-primary"
-            x={PAD_X}
-            y={52}
-            {...fitPrimary(
-              readout.primary.value,
-              readout.primary.label,
-              selected && structure !== 'strip',
-            )}
-          >
-            <tspan className="cv-val">{readout.primary.value}</tspan>
-            <tspan className="cv-cap" dx={4}>
-              {readout.primary.label}
-            </tspan>
-          </text>
-
           {/* Strip kinds drop the two-cell secondary row (the strip occupies
               that band), which previously cost them EVERY number beyond the
               primary. The right half of the primary row is empty on these
@@ -4651,7 +4650,13 @@ export default function Canvas({
 
       if (p.mode === 'link') {
         const w = toWorld(e.clientX, e.clientY);
-        const target = nodeAt(w.x, w.y);
+        // The input port's hit disc extends outside the node. Pointer capture
+        // retargets e.target to the surface, so inspect the actual release point.
+        const releaseElement = document.elementFromPoint(e.clientX, e.clientY);
+        const releaseHit = surfaceRef.current?.contains(releaseElement)
+          ? hitTest(releaseElement)
+          : BACKGROUND_HIT;
+        const target = releaseHit.kind === 'port-in' ? releaseHit.id : nodeAt(w.x, w.y);
         if (target && canLink(p.hit.id!, target)) {
           onConnect(p.hit.id!, target);
         }
@@ -4718,6 +4723,7 @@ export default function Canvas({
     [
       pendingLink,
       nodeAt,
+      hitTest,
       canLink,
       onConnect,
       onDeleteSelection,

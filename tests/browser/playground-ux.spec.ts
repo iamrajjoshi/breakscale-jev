@@ -132,8 +132,9 @@ for (const viewport of [
       page.getByRole('searchbox', { name: 'Search components', exact: true }),
     ).not.toBeVisible();
     for (const control of [
-      page.getByRole('button', { name: 'Try a full outage', exact: true }),
-      page.getByTestId('operator-source'),
+      page.getByRole('button', { name: 'Load outage demo', exact: true }),
+      page.getByTestId('source-recorded'),
+      page.getByTestId('source-live'),
       page.getByTestId('operator-stop'),
       page.getByTestId('operator-break'),
       page.getByRole('button', { name: 'Pause', exact: true }),
@@ -167,7 +168,7 @@ test('the first action runs a seven-component outage, six recorded repairs, and 
 }, info) => {
   test.setTimeout(60_000);
   await open(page);
-  await page.getByRole('button', { name: 'Try a full outage', exact: true }).click();
+  await page.getByRole('button', { name: 'Load outage demo', exact: true }).click();
   await expect(page.locator('.cv-node.is-faulted')).toHaveCount(6);
   await expect(activity(page)).toHaveCount(6, { timeout: 40_000 });
   await expect(activity(page).first()).toHaveAttribute('data-status', 'healthy', {
@@ -219,7 +220,8 @@ for (const viewport of [
     await expect(page.getByTestId('operator-recordings')).toBeVisible();
     for (const control of [
       toggle,
-      page.getByTestId('operator-source'),
+      page.getByTestId('source-recorded'),
+      page.getByTestId('source-live'),
       page.getByTestId('operator-stop'),
       page.getByTestId('operator-break'),
       page.getByTestId('operator-activity-toggle'),
@@ -298,8 +300,9 @@ test('both themes retain readable controls and the same playable canvas', async 
     await expect(settings).not.toBeVisible();
     await expectGraphVisible(page);
     for (const control of [
-      page.getByRole('button', { name: 'Try a full outage', exact: true }),
-      page.getByTestId('operator-source'),
+      page.getByRole('button', { name: 'Load outage demo', exact: true }),
+      page.getByTestId('source-recorded'),
+      page.getByTestId('source-live'),
       page.getByTestId('operator-stop'),
     ])
       await expectReachable(control);
@@ -320,9 +323,10 @@ test.describe('touch phone', () => {
       true,
     );
     for (const control of [
-      page.getByTestId('operator-source'),
+      page.getByTestId('source-recorded'),
+      page.getByTestId('source-live'),
       page.getByTestId('operator-stop'),
-      page.getByRole('button', { name: 'Try a full outage', exact: true }),
+      page.getByRole('button', { name: 'Load outage demo', exact: true }),
       page.getByTestId('operator-break'),
       page.getByTestId('operator-slow'),
       page.getByTestId('operator-traffic'),
@@ -459,6 +463,13 @@ test('the web app supports dragging, port connections, independent settings and 
   const fromPort = page.locator('.cv-port-hit[data-hit="port-out"][data-id="api2"]');
   const toPort = page.locator('.cv-port-hit[data-hit="port-in"][data-id="db"]');
   await fromPort.dragTo(toPort);
+  await expect(page.locator('.cv-edge-hit')).toHaveCount(9);
+  // The same visible input-port target still rejects duplicates and self-links.
+  await fromPort.dragTo(toPort);
+  await expect(page.locator('.cv-edge-hit')).toHaveCount(9);
+  await fromPort.dragTo(
+    page.locator('.cv-port-hit[data-hit="port-in"][data-id="api2"]'),
+  );
   await expect(page.locator('.cv-edge-hit')).toHaveCount(9);
   await expect
     .poll(async () =>

@@ -53,7 +53,9 @@ async function open(page: Page) {
   await seedSimpleSystem(page);
   await page.goto('/');
   await expect(page.locator('.cv-node')).toHaveCount(3);
-  await expect(page.getByTestId('operator-source')).toHaveValue('recorded');
+  await expect(
+    page.getByRole('radio', { name: 'Recorded', exact: true }),
+  ).toBeChecked();
   await expect(dock(page)).toHaveAttribute('data-source', 'recorded');
   await expect(dock(page)).toHaveAttribute('data-armed', 'true');
 }
@@ -250,7 +252,9 @@ test('an unmatched edited system stays broken and explains the recording limit',
     page.locator('[data-testid="operator-activity-entry"][data-applied="true"]'),
   ).toHaveCount(0);
   await expect(activity(page, 'healthy')).toHaveCount(0);
-  await expect(page.getByTestId('operator-source')).toHaveValue('recorded');
+  await expect(
+    page.getByRole('radio', { name: 'Recorded', exact: true }),
+  ).toBeChecked();
   await loadRecording(page, 'database-crash');
   await expect(activity(page, 'healthy')).toHaveCount(1, { timeout: 10_000 });
   await expect(node(page)).not.toHaveClass(/is-faulted/);
@@ -417,11 +421,10 @@ test('switching live to recorded to live cancels stale answers and retains the l
     else await route.fulfill({ json: response(request, requests.length) });
   });
   await open(page);
-  const source = page.getByTestId('operator-source');
-  await source.selectOption('live');
+  await page.getByRole('radio', { name: 'Live', exact: true }).check();
   await crash(page);
   await expect.poll(() => requests.length).toBe(1);
-  await source.selectOption('recorded');
+  await page.getByRole('radio', { name: 'Recorded', exact: true }).check();
   const cancelled = activity(page, 'cancelled');
   await expect(cancelled).toHaveCount(1);
   await expect(cancelled).toHaveAttribute('data-source', 'live');
@@ -429,7 +432,7 @@ test('switching live to recorded to live cancels stale answers and retains the l
   await expect(activity(page, 'healthy')).toHaveCount(1, { timeout: 10_000 });
   await expect(activity(page, 'healthy')).toHaveAttribute('data-source', 'recorded');
   expect(requests).toHaveLength(1);
-  await source.selectOption('live');
+  await page.getByRole('radio', { name: 'Live', exact: true }).check();
   await expect(page.getByTestId('operator-budget')).toContainText('1/18');
   // Return the old answer after re-entering live mode. Its epoch remains stale.
   await held!.fulfill({ json: response(requests[0]!, 1) }).catch(() => {});
@@ -484,7 +487,8 @@ test('recorded controls and expanded evidence remain reachable at 320px', async 
 }, info) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await open(page);
-  await expectReachable(page.getByTestId('operator-source'));
+  await expectReachable(page.getByTestId('source-recorded'));
+  await expectReachable(page.getByTestId('source-live'));
   await expectReachable(page.getByTestId('operator-break'));
   await crash(page);
   await expect(activity(page, 'healthy')).toHaveCount(1, { timeout: 10_000 });
@@ -496,7 +500,8 @@ test('recorded controls and expanded evidence remain reachable at 320px', async 
   await expect(activity(page)).toContainText('Recorded JEV');
   for (const control of [
     page.getByTestId('operator-stop'),
-    page.getByTestId('operator-source'),
+    page.getByTestId('source-recorded'),
+    page.getByTestId('source-live'),
     page.getByTestId('operator-activity-toggle'),
     page.getByRole('button', { name: 'Pause', exact: true }),
   ])

@@ -2,7 +2,7 @@
 
 breakscale-jev adds automatic JEV repair to [Breakscale](https://github.com/xevrion/breakscale), the system-design simulator by xevrion and contributors. Breakscale provides the editable canvas, 33 component types, examples, challenges and discrete-event engine. Its original history, authorship and MIT license are preserved in this fork.
 
-Turn up traffic, crash a service, slow a database or change its settings. **Recorded JEV is the default:** play with real saved model choices without an API key or a backend. Code reuses a choice only for matching settings, applies it to the current system, and measures fresh traffic. Choose **Live JEV** to request new decisions through the local server.
+Turn up traffic, crash a service, slow a database or change its settings. **Recorded JEV is the default:** play with real saved model choices without an API key or a backend. Code reuses a choice only for matching settings, applies it to the current system, and measures fresh traffic. Choose **Live** in Recovery to request new decisions through the local server.
 
 ## Run locally
 
@@ -15,19 +15,19 @@ npm run dev
 
 Open http://127.0.0.1:4176. `PORT` selects another local port. For production assets, run `npm run build` then `npm start`. The same Node process serves the app and model API, bound to loopback.
 
-For Live JEV, set `TYPESAFE_API_KEY` in the server environment or `~/.config/jev-research/credentials.env`, then select Live JEV in the repair bar. Keep the key out of browser code and `VITE_` variables. `JEV_OFFLINE=1` disables credential loading and model access for local checks.
+For Live JEV, set `TYPESAFE_API_KEY` in the server environment or `~/.config/jev-research/credentials.env`, then select **Live** in Recovery. Keep the key out of browser code and `VITE_` variables. `JEV_OFFLINE=1` disables credential loading and model access for local checks.
 
 ## Play
 
 The starter is a seven-component web app at 150 requests/second: visitors, a load balancer, three API servers, a shared cache and a database. Drag components to move them, click to edit settings, drag between ports to connect them, and use **Components** to add more. Select a connection to delete it in Inspector. **Load web app** restores the starter as one undoable change; saved diagrams keep their layout and settings.
 
-**Try a full outage** loads that web app with all six backend components crashed, then replays six actual JEV repairs. **Crash**, **Slowdown**, and the load controls change your current system. **Recorded runs** contains eighteen captured setups: twelve for the web app and six for the original three-component chain. Loading a setup is undoable. At its original settings and 150 requests/second, every backend component has a saved repair for an individual crash or slowdown. The full outage also has a captured six-step recovery. Doubling its load to 300 requests/second exposes a shared database bottleneck, but has no saved scaling repair: both capture attempts returned `unsupported`.
+**Load outage demo** loads that web app with all six backend components crashed, then replays six actual JEV repairs. **Crash**, **Slowdown**, and the load controls change your current system. **Recorded runs** contains eighteen captured setups: twelve for the web app and six for the original three-component chain. Loading a setup is undoable. At its original settings and 150 requests/second, every backend component has a saved repair for an individual crash or slowdown. The full outage also has a captured six-step recovery. Doubling its load to 300 requests/second exposes a shared database bottleneck, but has no saved scaling repair: both capture attempts returned `unsupported`.
 
-The repair/history rail sits beside the canvas on wide screens. On smaller screens, open **Runs & activity** to explore the evidence and other setups; Escape closes it and returns focus. **Components** opens the editor catalog. The current light/dark preference and saved desktop layout are preserved.
+Recovery sits beside the canvas on wide screens, with keyboard-accessible **Recorded** and **Live** source controls. Fresh demos use a vertical flow on phones and tall desktop canvases; wide canvases use the horizontal layout. On smaller screens, open **Runs & activity** to explore the evidence and other setups; Escape closes it and returns focus. **Components** opens the editor catalog. The current light/dark preference and saved desktop layout are preserved.
 
 Recordings are a finite library, not a local model. The current topology, component settings, load, faults and legal action must match a capture. Different settings can show “No recorded repair matches”; the canvas remains editable. Activity labels every reused choice as **Recorded JEV**, with its capture date, and shows measurements from your current simulation. It never substitutes historical metrics for a current result. An 800ms presentation step lets you interrupt the replay; it is not inference latency. See [recording provenance](docs/recordings.md).
 
-Recorded mode makes no health, decision or TypeSafe requests and does not consume the live call budget. A built `dist/` can be served by any static host for this mode. Live JEV requires the API server and is selected explicitly; provider failures do not silently switch sources. Stop or resume either mode from the repair bar. Healthy idling makes no model calls.
+Recorded mode makes no health, decision or TypeSafe requests and does not consume the live call budget. A built `dist/` can be served by any static host for this mode. Live JEV requires the API server and is selected explicitly; provider failures do not silently switch sources. Stop or resume either mode from Recovery. Healthy idling makes no model calls.
 
 Each decision selects one typed action. After applying it, the watcher observes at least 2,400 milliseconds of actual simulated time before another repair or a recovery claim. Open Activity to inspect the chosen action, whether it was applied, and the measured result. The latest 50 attempts stay in memory until the page reloads.
 

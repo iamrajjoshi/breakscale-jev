@@ -46,13 +46,9 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
       }}
     >
       <header className="operator-about-head">
-        <span className="operator-about-diagram" aria-hidden="true">
-          <i />
-          <span />
-          <i />
-          <span />
-          <i />
-        </span>
+        <svg className="operator-about-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 3v16h7a6 6 0 0 0 0-12h-3" />
+        </svg>
         <button
           className="btn btn-ghost btn-sm btn-icon"
           type="button"
@@ -63,7 +59,7 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
           ×
         </button>
       </header>
-      <h2 id="operator-about-title">Break the system. Watch JEV respond.</h2>
+      <h2 id="operator-about-title">About breakscale-jev</h2>
       <p id="operator-about-intro">
         breakscale-jev adds automatic JEV repair to Breakscale, the system-design
         simulator by xevrion and contributors. Turn up traffic, crash a service, slow a

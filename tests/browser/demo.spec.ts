@@ -182,6 +182,7 @@ test('the wide components rail resizes, persists and restores its width', async 
   if (await showComponents.isVisible()) await showComponents.click();
   const rail = page.locator('.app-slot-left');
   const handle = page.getByRole('separator', { name: 'Resize the components rail' });
+  await handle.hover();
   const initial = await rail.boundingBox();
   const grip = await handle.boundingBox();
   if (!initial || !grip) throw new Error('The components rail has no resize geometry');

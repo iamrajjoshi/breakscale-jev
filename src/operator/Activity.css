@@ -255,6 +255,13 @@
 }
 
 @media (max-width: 1099px) {
+  .operator-activity[open] > .activity-toggle {
+    position: sticky;
+    top: var(--operator-control-height, 0px);
+    z-index: 2;
+    background: var(--surface);
+  }
+
   .activity-scroll {
     max-height: none;
     overflow: visible;

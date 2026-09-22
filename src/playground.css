@@ -1,11 +1,18 @@
 /* Fork shell: a live canvas beside its repair history. The editor and simulator
    remain upstream; this layer owns the playground's layout and quieter chrome. */
 .app {
-  --bg: light-dark(#f6f7f9, #171a20);
-  --surface: light-dark(#ffffff, #20242c);
-  --border: light-dark(#dce1e8, #343b47);
-  --text: light-dark(#202631, #edf0f5);
-  --repair-width: 324px;
+  --bg: light-dark(#f7f8fa, #151618);
+  --surface: light-dark(#ffffff, #1c1d20);
+  --surface-2: light-dark(#f1f3f6, #24262b);
+  --border: light-dark(#e2e5e9, #303238);
+  --border-strong: light-dark(#c9cdd4, #494c55);
+  --text: light-dark(#20252c, #ecedef);
+  --text-dim: light-dark(#606975, #a6a9b1);
+  --text-faint: light-dark(#68717c, #9599a3);
+  --accent: light-dark(#315bcc, #94acf4);
+  --grid-line: light-dark(#eceef2, #1c1e22);
+  --grid-major: light-dark(#e0e4eb, #24262d);
+  --repair-width: 304px;
   --repair-clear: calc(var(--repair-width) + var(--sp-4));
 }
 
@@ -44,16 +51,14 @@
 }
 
 .playground-brand svg {
-  width: 28px;
-  height: 22px;
+  flex: none;
+  width: 24px;
+  height: 24px;
   stroke: currentColor;
-  stroke-width: 1.4;
-  fill: var(--surface);
-}
-
-.playground-tagline {
-  color: var(--text-dim);
-  font-size: var(--fs-sm);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 .app .app-island-menu {
@@ -70,6 +75,15 @@
   border-top: var(--bw) solid var(--border);
 }
 
+.app .app-island-menu .btn {
+  border-color: transparent;
+  background: transparent;
+}
+
+.app .app-island-menu .btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
 .app .traffic .label {
   text-transform: none;
   letter-spacing: 0;
@@ -82,7 +96,24 @@
 }
 
 .app .traffic .num-hero {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-num);
+}
+
+.app .traffic-metric .num {
+  min-height: 20px;
+  font-size: var(--fs-num);
+  line-height: 20px;
+}
+
+.app .traffic-metric .label {
+  font-size: var(--fs-sm);
+  line-height: 16px;
+  color: var(--text-dim);
+}
+
+.app .traffic-metric,
+.app .traffic-metric-group {
+  align-items: flex-end;
 }
 
 .app .traffic-load {
@@ -106,7 +137,11 @@
   display: none;
 }
 
-.app .cv-grid {
+.app .cv-node-body {
+  fill: color-mix(in srgb, var(--k-fill, var(--surface)) 38%, var(--surface));
+}
+
+.app .cv-node-hair {
   opacity: 0.5;
 }
 
@@ -141,7 +176,7 @@
 .stage-edit-tools p {
   margin: 0;
   color: var(--text-dim);
-  font-size: var(--fs-label);
+  font-size: var(--fs-sm);
   pointer-events: none;
 }
 
@@ -165,7 +200,7 @@
     width: var(--repair-width);
     max-width: none;
     margin: 0;
-    padding: var(--sp-5);
+    padding: var(--sp-4);
     border: 0;
     border-left: var(--bw) solid var(--border);
     border-radius: 0;
@@ -229,10 +264,6 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-
-  .app .playground-tagline {
-    display: none;
-  }
 }
 
 @media (max-width: 720px) {
@@ -264,9 +295,13 @@
     font-size: var(--fs-base);
   }
 
-  .playground-brand svg,
-  .playground-tagline {
-    display: none;
+  .playground-brand svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .playground-brand {
+    gap: var(--sp-1);
   }
 
   .app .app-island-menu {

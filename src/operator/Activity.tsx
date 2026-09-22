@@ -198,8 +198,8 @@ export function Activity({
         {entries.length === 0 ? (
           <p className="activity-empty">
             {source === 'recorded'
-              ? 'Start an outage to see what was chosen, what changed, and whether it worked.'
-              : 'Change traffic or edit a component. JEV’s decisions will appear here.'}
+              ? 'No repairs yet. Load a demo or inject a fault.'
+              : 'No repairs yet. Decisions will appear here.'}
           </p>
         ) : (
           <ol className="activity-list">
@@ -208,9 +208,11 @@ export function Activity({
             ))}
           </ol>
         )}
-        <p className="activity-retention">
-          Keeps the latest {ACTIVITY_LIMIT} attempts in this page session.
-        </p>
+        {entries.length > 0 && (
+          <p className="activity-retention">
+            Latest {ACTIVITY_LIMIT} attempts in this session.
+          </p>
+        )}
       </div>
     </details>
   );
